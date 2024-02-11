@@ -1,0 +1,35 @@
+.landing{
+font-size: 2em;
+position: fixed;
+display: flex;
+flex-direction: column;
+height: 25%;
+width: 25%;
+left: 37.5%;
+top: 40%;
+text-align: center;
+justify-content: center;
+
+}
+.join-anchor{
+  margin-top: 5%;
+  border: solid black 0.67px;
+  border-radius: 2%;
+  color: black;
+  text-decoration: none;
+}
+.start-anchor{
+  border: solid black 0.67px;
+  border-radius: 2%;
+  color: black;
+  text-decoration: none;
+}
+.game-holder{
+  background-color: rgb(0, 175, 0);
+  display: flex;
+  position: fixed;
+  top: 0;
+  left: 0;
+  height: 100%;
+  width: 100%;
+}
