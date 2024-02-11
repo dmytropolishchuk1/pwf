@@ -16,9 +16,9 @@ mongoose.connect(MONGODB_URI, { useNewUrlParser: true, useUnifiedTopology: true 
   .then(() => console.log('Connected to MongoDB'))
   .catch(err => console.error('Could not connect to MongoDB', err));
 
-  const apartmentSchema = new mongoose.Schema({
-    : String,
-    zeroData: String
+  const gameSchema = new mongoose.Schema({
+    gameId: String,
+    playersIds: String
   })
 
 app.get('/', (req, res) => {
