@@ -33,3 +33,8 @@ justify-content: center;
   height: 100%;
   width: 100%;
 }
+.player-holder{
+  height: 150px;
+  width: 50px;
+  border: solid black 1px;
+}
