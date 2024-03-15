@@ -137,7 +137,7 @@ function Game() {
   const [turnCount2, setTurnCount2] = useState(0);
   const [turnCount3, setTurnCount3] = useState(0);
   const [pot, setPot] = useState(0);
-  const [betAmount, setBetAmount] = useState(0); 
+  const [clientBetAmount, setClientBetAmount] = useState(0); 
   const [cards, setCards] = useState([]); // Assuming you want to keep track of all dealt cards
   const [runIndex, setRunIndex] = useState(0);
   const [runIndex2, setRunIndex2] = useState(0);
@@ -146,10 +146,34 @@ function Game() {
   const [betResCounter, setBetResCounter] = useState(0);
   const [betResBoolean, setBetResBoolean] = useState(false);
   const [showBet, setShowBet] = useState(false);
-  const [dealer, setDealer] = useState(0);
   const [checkNoShow, setCheckNoShow] = useState(false);
   const [saveBet, setSaveBet] = useState(false);
   const [winner, setWinner] = useState(false);
+  const [clientRaiseAmount, setClientRaiseAmount] = useState(0);
+  const [midBet, setMidBet] = useState(0);
+  const [multiRaise, setMultiRaise] = useState(false);
+  const [dealer, setDealer] = useState(0);
+  const [inputInteracted, setInputInteracted] = useState(false);
+  const [noLimitIndex, setNoLimitIndex] = useState(0);
+  const [clientBetDif, setClientBetDif] = useState(0);
+  const [plusBool, setPlusBool] = useState(false);
+  const [moneySaved, setMoneySaved] = useState(0);
+  const [interRaise, setInterRaise] = useState(0);
+  const [raised, setRaised] = useState(false);
+  const [justOneRaise, setJustOneRaise] = useState(false);
+  const [secondRaise, setSecondRaise] = useState(false);
+  const [abstractRaise, setAbstractRaise] = useState(false);
+  const [minusBetBoolean, setMinusBetBoolean] = useState(false);
+  const [minusBet, setMinusBet] = useState(false);
+  const [brSecRaise, setBrSecRaise] = useState(0);
+  const [lastBetRezz, setLastBetRezz] = useState(0);
+  const [stopIndex, setStopIndex] = useState(0);
+  const [secBr, setSecBr] = useState(0);
+  const [upR, setUpR] = useState(0);
+
+
+  const [interBet, setInterBet] = useState(0);
+  const [interIndex, setInterIndex] = useState(0);
 
   useEffect(() => {
     if (isTurn) {
@@ -207,22 +231,43 @@ function Game() {
     });
 
     socket.on('flopDealt', (flopCards) => {
-      if (runIndex <= 1) { // Check if the handler should run based on the index
-        setTurnCount(2);
+      if(runIndex <= 1){
         const newCards = [...cards, ...flopCards];
         setCards(newCards);
         setTableCards(newCards.slice(0, 3));
         console.log('flop dealt');
-        setRunIndex(runIndex + 1); // Increment the index by 1
+        setRunIndex(runIndex + 1);      
       }
-      
       });
-if (turnCount === 2) { // Check if it's the second time isTurn becomes true
-          socket.emit('requestFlop', { gameId });
-        }
+      socket.on('goFlop', () => {
+        socket.emit('requestFlop', { gameId });
+        setCheckNoShow(false);
+        setBetResBoolean(false);
+        setClientBetAmount(0);
+        setClientRaiseAmount(0);
+        setSaveBet(0);
+        setPotDifference(0);
+        setMultiRaise(false);
+        setInputInteracted(false);
+        setNoLimitIndex(0);
+        setMidBet(0);
+        setInterBet(0);
+        setPlusBool(false);
+        setInterRaise(0);
+        setRaised(false);
+        setJustOneRaise(false);
+        setSecondRaise(false);
+        setAbstractRaise(0);
+        setMinusBetBoolean(false);
+        setMinusBet(0);
+        setBrSecRaise(0);
+        setLastBetRezz(false);
+        setStopIndex(0);
+        setSecBr(0);
+        setUpR(0);
+      });
     socket.on('turnDealt', (turnCards) => {
       if(runIndex2 <= 1){
-      setTurnCount2(2);
       const newCards = [...cards, ...turnCards];
       setCards(newCards);
       setTableCards(newCards.slice(0, 4));
@@ -231,13 +276,36 @@ if (turnCount === 2) { // Check if it's the second time isTurn becomes true
       }
 
     });
-    if (turnCount2 === 2) { // Check if it's the second time isTurn becomes true
-          socket.emit('requestTurn', { gameId });
-        }
+    socket.on('goTurn', () => {
+      socket.emit('requestTurn', { gameId });
+      setCheckNoShow(false);
+      setBetResBoolean(false);
+      setClientBetAmount(0);
+      setClientRaiseAmount(0);
+      setSaveBet(0);
+      setPotDifference(0);
+      setMultiRaise(false);
+      setInputInteracted(false);
+      setNoLimitIndex(0);
+      setMidBet(0);
+      setInterBet(0);
+      setPlusBool(false);
+      setInterRaise(0);
+      setRaised(false);
+      setJustOneRaise(false);
+      setSecondRaise(false);
+      setAbstractRaise(0);
+      setMinusBetBoolean(false);
+      setMinusBet(0);
+      setBrSecRaise(0);
+      setLastBetRezz(false);
+      setStopIndex(0);
+      setSecBr(0);
+      setUpR(0);
+        });
     
     socket.on('riverDealt', (riverCards) => {
       if(runIndex3 <= 1){
-      setTurnCount3(2);
       const newCards = [...cards, ...riverCards];
       setCards(newCards);
       setTableCards(newCards.slice(0, 5));
@@ -246,14 +314,46 @@ if (turnCount === 2) { // Check if it's the second time isTurn becomes true
       }
 
     });
-    if (turnCount3 === 2) { // Check if it's the second time isTurn becomes true
-          socket.emit('requestRiver', { gameId });
-        }
+    socket.on('goRiver', () => {
+      socket.emit('requestRiver', { gameId });
+      setCheckNoShow(false);
+      setBetResBoolean(false);
+      setClientBetAmount(0);
+      setClientRaiseAmount(0);
+      setSaveBet(0);
+      setPotDifference(0);
+      setMultiRaise(false);
+      setInputInteracted(false);
+      setNoLimitIndex(0);
+      setMidBet(0);
+      setInterBet(0);
+      setPlusBool(false);
+      setInterRaise(0);
+      setRaised(false);
+      setJustOneRaise(false);
+      setSecondRaise(false);
+      setAbstractRaise(0);
+      setMinusBetBoolean(false);
+      setMinusBet(0);
+      setBrSecRaise(0);
+      setLastBetRezz(false);
+      setStopIndex(0);
+      setSecBr(0);
+      setUpR(0);
+    });
+
     socket.on('updateTurn', ({ isTurn, playerId: currentTurnPlayerId }) => {
       if (playerId === currentTurnPlayerId) {
           setIsTurn(isTurn);
       }
   });
+  socket.on('didRaise', () => {
+    setRaised(true);
+});
+
+    socket.on('dealerEmitted', ({isDealer}) => {
+      setDealer(Number(isDealer));
+    });
       // Listen for 'playersReady' event to update UI with ready count
     socket.on('playersReady', ({ count, total }) => {
       // Update your UI to show something like "1/2 Players Ready"
@@ -268,15 +368,144 @@ if (turnCount === 2) { // Check if it's the second time isTurn becomes true
 });
     socket.on('potUpdated', ({ betAmount }) => {
       console.log(`Received betAmount:`, betAmount, `Current pot:`, pot);
-      if (betAmount>0 && betAmount <= playerMoney){
+      const numericBetAmount = Number(betAmount);
     // Assuming betAmount is the amount to add to the current pot
     const updatedPot = Number(pot) + Number(betAmount);
     console.log(`Updated pot:`, updatedPot);
-    setBetAmount(betAmount);
+    setClientBetAmount(numericBetAmount);
     setPot(Number(updatedPot));
-    setPotDifference(betAmount);
-      }
 });
+socket.on('raiseEmitted', ({ betAmount }) => {
+  console.log(`Received betAmount:`, betAmount, `Current pot:`, pot);
+  const numericBetAmount = Number(betAmount);
+// Assuming betAmount is the amount to add to the current pot
+const updatedPot = Number(pot) + Number(betAmount);
+console.log(`Updated pot:`, updatedPot);
+if (noLimitIndex===1){
+setMultiRaise(false);
+const noLimitPot = Number(pot) + numericBetAmount;
+setClientBetAmount (numericBetAmount);
+setPot(pot + numericBetAmount);
+}
+ else if (noLimitIndex>=2){
+  if (interIndex<=1){
+    setMultiRaise(true);
+    setClientBetAmount (numericBetAmount);
+    setPot(pot + numericBetAmount);
+    setInterIndex(interIndex+1);
+  }else{
+    if (plusBool){
+      console.log(`Updated pot:`, updatedPot);
+      setClientBetAmount(numericBetAmount);
+      setPot(Number(pot)+numericBetAmount);
+        }
+    else{    
+    setMultiRaise(true);
+    setClientBetAmount (numericBetAmount);
+    setPot(pot + numericBetAmount);
+  }
+}
+  }
+else{
+  if (plusBool){
+console.log(`Updated pot:`, updatedPot);
+setClientBetAmount(numericBetAmount);
+setPot(Number(pot)+numericBetAmount);
+  }
+  else{
+  console.log(`Updated pot:`, updatedPot);
+setClientBetAmount(numericBetAmount);
+setPot(Number(pot)+numericBetAmount);
+  }
+}
+});
+socket.on('raisecTwo', ({ betAmount }) => {
+  setPlusBool(true);
+});
+socket.on('interRaiseBetres', ({ ir })=>{
+  setAbstractRaise(Number(ir));
+});
+socket.on('onlyOneRaise',() => {
+  setJustOneRaise(true);
+});
+socket.on('twoRaise',() => {
+  setSecondRaise(true);
+});
+socket.on('minusBet',() => {
+  setMinusBetBoolean(true);
+});
+socket.on('betRezzySecRaise',({brSecRaise}) => {
+  setBrSecRaise(Number(brSecRaise));
+});
+socket.on('lastBetRezzy',({betRezzy}) => {
+  setLastBetRezz(true);
+  if (stopIndex<1 && interBet === 0 && interRaise === 0 && secBr === 0){
+  setPlayerMoney(playerMoney-Number(betRezzy));
+  setStopIndex(stopIndex+1);
+  console.log(`secBr:${secBr}`);
+};
+  setLastBetRezz(false);
+});
+  socket.on ('seccyBR', ({seccyBR}) => {
+    if (interBet === 0 && interRaise === 0){
+    setPlayerMoney(playerMoney-Number(seccyBR));
+    setSecBr(Number(seccyBR));
+    }
+  });
+socket.on('potPlus', ({potPlus}) => {
+  setPot(pot+Number(potPlus));
+});
+socket.on('upRaise', ({upRaise}) => {
+  if (interBet === 0 && interRaise === 0){
+  setPlayerMoney(playerMoney+0);
+  }
+});
+socket.on('chipsMinus', ({chipsMinus}) =>{
+  if (interBet === 0 && interRaise !== 0){
+  setPlayerMoney(playerMoney-Number(chipsMinus));
+  }
+});
+socket.on('chipsMinus2', ({chipsMinus2}) => {
+  if (interBet !== 0 && interRaise === 0){
+  setPlayerMoney(playerMoney-Number(chipsMinus2));
+  }
+});
+
+
+
+socket.on('newHand', () => {
+  setPlayerHand([]);
+  setCheckNoShow(false);
+  setBetResBoolean(false);
+  setClientBetAmount(0);
+  setClientRaiseAmount(0);
+  setSaveBet(0);
+  setPotDifference(0);
+  setPot(0);
+  setTableCards([]);
+  setCards([]);
+  setRunIndex(0);
+  setRunIndex2(0);
+  setRunIndex3(0);
+  setNoLimitIndex(0);
+  setMultiRaise(false);  
+  setInputInteracted(false);
+  setInterBet(0);
+  setMidBet(0);
+  setPlusBool(false);
+  setInterRaise(0);
+  setRaised(false);
+  setJustOneRaise(false);
+  setSecondRaise(false);
+  setAbstractRaise(0);
+  setMinusBetBoolean(false);
+  setMinusBet(0);
+  setBrSecRaise(0);
+  setLastBetRezz(false);
+  setStopIndex(0);
+  setSecBr(0);
+  setUpR(0);
+})
                
       return () => {
         socket.off('gameUpdated', handleGameUpdated);
@@ -290,51 +519,116 @@ if (turnCount === 2) { // Check if it's the second time isTurn becomes true
         socket.off('chipsDealt');
         socket.off('betMade');
         socket.off('potUpdated');
+        socket.off('raiseEmitted');
+        socket.off('dealerEmitted');
+        socket.off('interRaiseBetres');
+        socket.off('didRaise');
+        socket.off('onlyOneRaise');
+        socket.off('twoRaise');
+        socket.off('raisecTwo');
+        socket.off('minusBet');
+        socket.off('lastBetRezzy');
+        socket.off('seccyBR'); 
+        socket.off('upRaise');
+        socket.off('chipsMinus');
+        socket.off('chipsMinus2');
       };
-    }, [gameId, socket, turnCount, playerId, pot, cards, runIndex]);
+    }, [gameId, socket, turnCount, playerId, pot, cards, runIndex, dealer]);
   
 
-    const handlePlayerAction = (actionType, betAmount, event) => {
+    const handlePlayerAction = (actionType, betAmount, event, clientBetAmount) => {
       
       const playerId = localStorage.getItem('playerId');
     
       // Ensure betAmount is a number
       const numericBetAmount = Number(betAmount);
+      const numericRaiseAmount = Number(clientRaiseAmount);
       // Ensure playerMoney and pot are treated as numbers
       const numericPlayerMoney = Number(playerMoney);
       const numericPot = Number(pot);
+      const updatedChips = numericPlayerMoney - numericBetAmount;
       let actionPayload = { gameId, playerId, action: actionType, betAmount: numericBetAmount };
 
 
       if (isTurn && (actionType === 'bet') && numericBetAmount > 0 && betAmount>0 && betAmount<=playerMoney && numericBetAmount <= numericPlayerMoney) {
-        
-        event.preventDefault(); // Prevent default form submission if applicable
-        setSaveBet(numericBetAmount);
-        setBetAmount(numericBetAmount);
-        let updatedChips = numericPlayerMoney - numericBetAmount;
-        setPlayerMoney(updatedChips); // Update player's chips
-        setPotDifference(saveBet);
+        setNoLimitIndex(noLimitIndex+1);
+        setClientBetAmount(numericBetAmount);
+        setPlayerMoney(numericPlayerMoney-numericBetAmount);
+        setInterBet(numericBetAmount);
       }
       else if (isTurn && (actionType === 'raise') && numericBetAmount > 0 && betAmount>0 && betAmount<=playerMoney && numericBetAmount <= numericPlayerMoney) {
-        setBetAmount(numericBetAmount);
-        setSaveBet(numericBetAmount);
-        let updatedChips = numericPlayerMoney - numericBetAmount;
-        setPlayerMoney(updatedChips); // Update player's chips
-        setPotDifference(saveBet);
+        setNoLimitIndex(noLimitIndex+1);
+
+        if(minusBetBoolean === true){
+          setPlayerMoney(numericPlayerMoney-numericBetAmount+interBet);
+          console.log('c1');
+        }
+        else{
+        setClientBetAmount(numericBetAmount);
+        setInputInteracted(false);
+        setPlayerMoney(numericPlayerMoney-numericBetAmount);
+        setInterRaise(numericBetAmount);console.log('c2');
+        }
+        
       }
       
-      else if (isTurn && (actionType === 'betres') && potDifference>0 && potDifference<=playerMoney) {
-        let updatedChips = numericPlayerMoney - potDifference + saveBet;
-        setPotDifference(potDifference-saveBet);
-        setPlayerMoney(updatedChips); // Update player's chips
-
+      else if (isTurn && actionType === 'betres') {
+        console.log(`lastbetrezz: ${lastBetRezz}`);
+        if (raised && justOneRaise===true && secondRaise === false){
+        if (interBet>0){
+        setClientBetAmount(numericBetAmount);
+        setPlayerMoney(numericPlayerMoney-numericBetAmount+interBet);
+        setPlusBool(true);
+        console.log ('r1');
+        }else if(interRaise>0){
+        setClientBetAmount(numericBetAmount);
+        setPlayerMoney(numericPlayerMoney-numericBetAmount+interRaise);
+        setPlusBool(true);
+        console.log ('r2');
+        }
+        else {
+          setClientBetAmount(numericBetAmount);
+          setPlayerMoney(numericPlayerMoney-numericBetAmount);
+          setPlusBool(true);
+          console.log ('r2.5');
+        }
+        }
+          else if (raised && secondRaise === true && justOneRaise === true){
+          if (interBet>0){
+          setClientBetAmount(numericBetAmount);
+          setPlayerMoney(numericPlayerMoney-numericBetAmount+interBet);
+          setPlusBool(true);
+          console.log ('r3');
+          }
+          else if(interRaise>0 && minusBetBoolean===false){
+          setClientBetAmount(numericBetAmount);
+          setPlayerMoney(numericPlayerMoney-abstractRaise+interRaise);
+          setPlusBool(true);
+          console.log ('r4');
+          }
+          else if(interRaise>0 && minusBetBoolean===true){
+          setSaveBet(numericPlayerMoney-(numericPlayerMoney-brSecRaise+interRaise));
+          setPlayerMoney(numericPlayerMoney-brSecRaise+interRaise);
+          setPlusBool(true);
+          console.log ('r4.5');
+          console.log(abstractRaise);console.log(numericBetAmount);console.log(interRaise);
+          }
+        }
+        else{
+        setClientBetAmount(numericBetAmount);
+        setPlayerMoney(numericPlayerMoney-numericBetAmount);
+        console.log ('r5');
       }
+      
+  }
       else if (isTurn && actionType === 'check'){
-
     }
-      socket.emit('playerAction', actionPayload);
-    };
-
+    else if (actionType === 'check'){
+    }
+    socket.emit('playerAction', actionPayload);
+       
+};
+    
 const markPlayerReady = () => {
   socket.emit('playerReady', { gameId, playerId });
 };
@@ -346,7 +640,9 @@ const markPlayerReady = () => {
       <div>
         <h2>Players in Game:</h2>
         {playersInGame.map((_, index) => (
-          <div key={index} style={{ width: '150px', height: '150px', backgroundColor: 'black', margin: '10px' }}></div>
+        <div key={index} style={{ width: '150px', height: '150px', backgroundColor: 'black', margin: '10px' }}>
+        {index === dealer && <p className="dealer-chip">Dealer</p>}
+        </div>
         ))}
         {!gameStarted && (
         <>
@@ -373,26 +669,33 @@ const markPlayerReady = () => {
         {!betResBoolean && (
         <input
           type="number"
-          value={betAmount}
-          onChange={(e) => setBetAmount(Number(e.target.value))}
+          value={clientBetAmount}
+          onChange={(e) => setClientBetAmount(Number(e.target.value))}
           placeholder="Bet Amount"
         />)}
-        {betResBoolean && (
-        <button onClick={() => handlePlayerAction('betres', betAmount)}>Bet: ${betAmount}</button>
+        {betResBoolean && !multiRaise && !inputInteracted && (
+        <button onClick={() => handlePlayerAction('betres', clientBetAmount)}>Bet: ${clientBetAmount}</button>
+        )}
+        {betResBoolean && multiRaise && !inputInteracted && (
+        <button onClick={() => handlePlayerAction('betres', clientBetAmount)}>Bet//: ${clientBetAmount}</button>
         )}
         {!betResBoolean && (
-        <button onClick={(e) => handlePlayerAction('bet', betAmount, e)}>Bet</button>
+        <button onClick={() => handlePlayerAction('bet', clientBetAmount)}>Bet</button>
         )}
         {betResBoolean && (
         <input
           type="number"
-          value={betAmount}
-          onChange={(e) => setBetAmount(Number(e.target.value))}
+          value={Number(clientBetAmount)}
+          onChange={(e) => {
+            setClientBetAmount(Number(e.target.value));
+            setInputInteracted(true); // Set to true on change
+          }}
+          onClick={() => setInputInteracted(true)} // Set to true on click
           placeholder="Raise Amount"
         />
         )}
         {betResBoolean && (
-        <button onClick={() => handlePlayerAction('raise', betAmount)}>Raise</button>
+        <button onClick={() => handlePlayerAction('raise', Number(clientBetAmount))}>Raise</button>
         )}
         <button onClick={() => handlePlayerAction('fold')}>Fold</button>
         </div>
