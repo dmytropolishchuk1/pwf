@@ -443,13 +443,17 @@ socket.on('lastBetRezzy',({betRezzy}) => {
   setPlayerMoney(playerMoney-Number(betRezzy));
   setStopIndex(stopIndex+1);
   console.log(`secBr:${secBr}`);
-};
+}else{
+  setPlayerMoney(playerMoney+0);
+}
   setLastBetRezz(false);
 });
   socket.on ('seccyBR', ({seccyBR}) => {
     if (interBet === 0 && interRaise === 0){
     setPlayerMoney(playerMoney-Number(seccyBR));
     setSecBr(Number(seccyBR));
+    }else{
+      setPlayerMoney(playerMoney+0);
     }
   });
 socket.on('potPlus', ({potPlus}) => {
@@ -458,18 +462,106 @@ socket.on('potPlus', ({potPlus}) => {
 socket.on('upRaise', ({upRaise}) => {
   if (interBet === 0 && interRaise === 0){
   setPlayerMoney(playerMoney+0);
+  }else{
+    setPlayerMoney(playerMoney+0);
   }
 });
 socket.on('chipsMinus', ({chipsMinus}) =>{
   if (interBet === 0 && interRaise !== 0){
   setPlayerMoney(playerMoney-Number(chipsMinus));
+  }else{
+    setPlayerMoney(playerMoney+0);
   }
 });
 socket.on('chipsMinus2', ({chipsMinus2}) => {
   if (interBet !== 0 && interRaise === 0){
   setPlayerMoney(playerMoney-Number(chipsMinus2));
+  }else{
+    setPlayerMoney(playerMoney+0);
   }
 });
+socket.on('twoPtwoR', ({twoPtwoR}) => {
+  if (interBet !== 0 && interRaise === 0){
+    setPlayerMoney(playerMoney-Number(twoPtwoR));
+  }else{
+    setPlayerMoney(playerMoney+0);
+  }
+});
+socket.on('tootsiePlus', ({tootsiePlus}) => {
+  if (interBet === 0 && interRaise !== 0){
+    setPlayerMoney(playerMoney-Number(tootsiePlus));
+  }else{
+    setPlayerMoney(playerMoney+0);
+  }
+});
+socket.on('chippyMin', ({chippyMin}) => {
+  if (interBet === 0 && interRaise === 0){
+    setPlayerMoney(playerMoney-Number(chippyMin));
+  }else{
+    setPlayerMoney(playerMoney+0);
+  }
+});
+socket.on('cPMM', ({cPMM}) => {
+  if (interBet === 0 && interRaise !== 0 && isTurn){
+    setPlayerMoney(playerMoney-Number(cPMM));
+  }else{
+    setPlayerMoney(playerMoney+0);
+  }
+});
+socket.on('zzTT', ({zzTT}) => {
+  if (interBet !== 0 && interRaise === 0 && isTurn){
+    setPlayerMoney(playerMoney-Number(zzTT));
+  }else{
+    setPlayerMoney(playerMoney+0);
+  }
+  setIsTurn(false);
+});
+socket.on ('secSEC', ({secSEC}) => {
+  if (interBet === 0 && interRaise !== 0 && isTurn){
+  setPlayerMoney(playerMoney-Number(secSEC));
+  }else{
+    setPlayerMoney(playerMoney+0);
+  }
+  setIsTurn(false);
+});
+socket.on ('vvPP', ({vvPP}) => {
+  if (interBet === 0 && interRaise !== 0 && isTurn){
+  setPlayerMoney(playerMoney-Number(vvPP));
+  }else{
+    setPlayerMoney(playerMoney+0);
+  }
+  setIsTurn(false);
+});
+socket.on ('aaTT', ({aaTT}) => {
+  if (interBet === 0 && interRaise === 0 && isTurn){
+  setPlayerMoney(playerMoney-Number(aaTT));
+  }else{
+    setPlayerMoney(playerMoney+0);
+  }
+  setIsTurn(false);
+});
+socket.on ('ppPP', ({ppPP}) => {
+  if (interBet !== 0 && interRaise === 0 && isTurn){
+  setPlayerMoney(playerMoney-Number(ppPP));
+  }else{
+    setPlayerMoney(playerMoney+0);
+  }
+  setIsTurn(false);
+});
+socket.on ('ddDD', ({ddDD}) => {
+  if (interBet === 0 && interRaise !== 0 && isTurn){
+  setPlayerMoney(playerMoney-Number(ddDD));
+  }else{
+    setPlayerMoney(playerMoney+0);
+  }
+  setIsTurn(false);
+});
+
+
+
+
+
+
 
 
 
@@ -532,6 +624,15 @@ socket.on('newHand', () => {
         socket.off('upRaise');
         socket.off('chipsMinus');
         socket.off('chipsMinus2');
+        socket.off('twoPtwoR');
+        socket.off('tootsiePlus');
+        socket.off('chippyMin');
+        socket.off('cPMM');
+        socket.off('zzTT');
+        socket.off('vvPP');
+        socket.off('aaTT');
+        socket.off('ppPP');
+        socket.off('ddDD');
       };
     }, [gameId, socket, turnCount, playerId, pot, cards, runIndex, dealer]);
   
