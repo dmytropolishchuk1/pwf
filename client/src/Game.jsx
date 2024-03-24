@@ -170,7 +170,9 @@ function Game() {
   const [stopIndex, setStopIndex] = useState(0);
   const [secBr, setSecBr] = useState(0);
   const [upR, setUpR] = useState(0);
-
+  const [blindStopper, setBlindStopper] = useState(0);
+  const [clientSB, setClientSB] = useState(0);
+  const [clientBB, setClientBB] = useState(0); 
 
   const [interBet, setInterBet] = useState(0);
   const [interIndex, setInterIndex] = useState(0);
@@ -437,17 +439,22 @@ socket.on('minusBet',() => {
 socket.on('betRezzySecRaise',({brSecRaise}) => {
   setBrSecRaise(Number(brSecRaise));
 });
-socket.on('lastBetRezzy',({betRezzy}) => {
+/*socket.on('lastBetRezzy',({betRezzy}) => {
   setLastBetRezz(true);
-  if (stopIndex<1 && interBet === 0 && interRaise === 0 && secBr === 0){
+  if (stopIndex<1 && interBet === 0 && interRaise === 0 && isTurn){
   setPlayerMoney(playerMoney-Number(betRezzy));
   setStopIndex(stopIndex+1);
   console.log(`secBr:${secBr}`);
-}else{
-  setPlayerMoney(playerMoney+0);
 }
   setLastBetRezz(false);
-});
+});*/
+  socket.on ('hhGG', ({hhGG}) => {
+    if (interBet === 0 && interRaise === 0 && isTurn){
+    setPlayerMoney(playerMoney-Number(hhGG));
+    }else{
+      setPlayerMoney(playerMoney+0);
+    }
+  });
   socket.on ('seccyBR', ({seccyBR}) => {
     if (interBet === 0 && interRaise === 0){
     setPlayerMoney(playerMoney-Number(seccyBR));
@@ -460,18 +467,14 @@ socket.on('potPlus', ({potPlus}) => {
   setPot(pot+Number(potPlus));
 });
 socket.on('upRaise', ({upRaise}) => {
-  if (interBet === 0 && interRaise === 0){
+  if (interBet === 0 && interRaise === 0 && isTurn){
   setPlayerMoney(playerMoney+0);
-  }else{
-    setPlayerMoney(playerMoney+0);
   }
 });
 socket.on('chipsMinus', ({chipsMinus}) =>{
   if (interBet === 0 && interRaise !== 0){
   setPlayerMoney(playerMoney-Number(chipsMinus));
-  }else{
-    setPlayerMoney(playerMoney+0);
-  }
+    }
 });
 socket.on('chipsMinus2', ({chipsMinus2}) => {
   if (interBet !== 0 && interRaise === 0){
@@ -497,6 +500,13 @@ socket.on('tootsiePlus', ({tootsiePlus}) => {
 socket.on('chippyMin', ({chippyMin}) => {
   if (interBet === 0 && interRaise === 0){
     setPlayerMoney(playerMoney-Number(chippyMin));
+  }else{
+    setPlayerMoney(playerMoney+0);
+  }
+});
+socket.on('chippyM', ({chippyM}) => {
+  if (interBet === 0 && interRaise === 0 && isTurn){
+    setPlayerMoney(playerMoney-Number(chippyM));
   }else{
     setPlayerMoney(playerMoney+0);
   }
@@ -556,6 +566,36 @@ socket.on ('ddDD', ({ddDD}) => {
   }
   setIsTurn(false);
 });
+socket.on ('xXX', ({xXX}) => {
+  if (interBet === 0 && interRaise !== 0 && isTurn){
+  setPlayerMoney(playerMoney-Number(xXX));
+  }else{
+    setPlayerMoney(playerMoney+0);
+  }
+  setIsTurn(false);
+});
+socket.on ('bBB', ({bBB}) => {
+  if (interBet === 0 && interRaise !== 0 && isTurn){
+  setPlayerMoney(playerMoney-Number(bBB));
+  }else{
+    setPlayerMoney(playerMoney+0);
+  }
+  setIsTurn(false);
+});
+
+socket.on('sB', () => {
+  if (isTurn){
+    setPlayerMoney(playerMoney-25); 
+  }
+  });
+socket.on('bB', () => {
+  if (isTurn){
+    setPlayerMoney(playerMoney-50);
+  }
+  });
+
+
+
 
 
 
@@ -598,6 +638,11 @@ socket.on('newHand', () => {
   setSecBr(0);
   setUpR(0);
 })
+
+window.addEventListener('beforeunload', function(event) {
+  // Emit an event to the server indicating the player is leaving the game
+  socket.emit('playerLeaving', { gameId, playerId });
+});
                
       return () => {
         socket.off('gameUpdated', handleGameUpdated);
@@ -633,6 +678,12 @@ socket.on('newHand', () => {
         socket.off('aaTT');
         socket.off('ppPP');
         socket.off('ddDD');
+        socket.off('hhGG');
+        socket.off('chippyM');
+        socket.off('xXX');
+        socket.off('bBB');
+        socket.off('sB');
+        socket.off('bB');
       };
     }, [gameId, socket, turnCount, playerId, pot, cards, runIndex, dealer]);
   
