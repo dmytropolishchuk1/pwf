@@ -171,8 +171,9 @@ function Game() {
   const [secBr, setSecBr] = useState(0);
   const [upR, setUpR] = useState(0);
   const [blindStopper, setBlindStopper] = useState(0);
-  const [clientSB, setClientSB] = useState(0);
-  const [clientBB, setClientBB] = useState(0); 
+  const [SB, setSB] = useState(0);
+  const [isSmallBlind, setIsSmallBlind] = useState(false);
+  const [isBigBlind, setIsBigBlind] = useState(false);
 
   const [interBet, setInterBet] = useState(0);
   const [interIndex, setInterIndex] = useState(0);
@@ -344,11 +345,61 @@ function Game() {
       setUpR(0);
     });
 
+    socket.on('newPot2', ({newPot2, betAmount}) => {
+      setClientBetAmount(Number(betAmount));
+      setPot(Number(newPot2));
+    });
+    socket.on('updateTurnAfterBlinds', ({ isTurn, playerId: currentTurnPlayerId }) => {
+      if (playerId === currentTurnPlayerId) {
+        setIsTurn(isTurn);
+        setBetResBoolean(true);
+        setCheckNoShow(true);
+        console.log('after blinds player');
+        console.log('isTurn:', isTurn);
+      }
+    });  
+    socket.on('updateTurnBigBlind', ({ isTurn, playerId: currentTurnPlayerId }) => {
+      if (playerId === currentTurnPlayerId) {
+        setIsTurn(isTurn);
+        if (isSmallBlind && isTurn) {
+          if (playerMoney>50){
+          setPlayerMoney(playerMoney - 50);
+          socket.emit('potBB', {potBB: 50, gameId});
+        } else {
+          socket.emit('potBB', {potBB: playerMoney, gameId});
+          setPlayerMoney(playerMoney-playerMoney);
+        }
+          setIsBigBlind(false); 
+        }
+        console.log('Update turn event received');
+        console.log('isBigBlind:', isBigBlind);
+        console.log('isTurn:', isTurn);
+      }
+    });  
+    socket.on('updateTurnSmallBlind', ({ isTurn, playerId: currentTurnPlayerId }) => {
+      if (playerId === currentTurnPlayerId) {
+        setIsTurn(isTurn);
+        if (isSmallBlind && isTurn) {
+          if (playerMoney>25){
+          setPlayerMoney(playerMoney - 25);
+          setSB(25);
+          socket.emit('potSB', {potSB: 25, gameId});
+        } else {
+          socket.emit('potSB', {potSB: playerMoney, gameId});
+          setPlayerMoney(playerMoney-playerMoney);
+        }
+          setIsSmallBlind(false); 
+        }
+        console.log('Update turn event received');
+        console.log('isSmallBlind:', isSmallBlind);
+        console.log('isTurn:', isTurn);
+      }
+    });  
     socket.on('updateTurn', ({ isTurn, playerId: currentTurnPlayerId }) => {
       if (playerId === currentTurnPlayerId) {
-          setIsTurn(isTurn);
+        setIsTurn(isTurn);
       }
-  });
+    });
   socket.on('didRaise', () => {
     setRaised(true);
 });
@@ -584,14 +635,13 @@ socket.on ('bBB', ({bBB}) => {
 });
 
 socket.on('sB', () => {
-  if (isTurn){
-    setPlayerMoney(playerMoney-25); 
-  }
+  setIsSmallBlind(true);
   });
 socket.on('bB', () => {
-  if (isTurn){
-    setPlayerMoney(playerMoney-50);
-  }
+  setIsBigBlind(true);
+  });
+socket.on('skiPot', ({skiPot}) => {
+  setPot(Number(skiPot));
   });
 
 
@@ -637,6 +687,8 @@ socket.on('newHand', () => {
   setStopIndex(0);
   setSecBr(0);
   setUpR(0);
+  setIsSmallBlind(false);
+  setIsBigBlind(false);
 })
 
 window.addEventListener('beforeunload', function(event) {
@@ -684,6 +736,10 @@ window.addEventListener('beforeunload', function(event) {
         socket.off('bBB');
         socket.off('sB');
         socket.off('bB');
+        socket.off('updateTurnSmallBlind');
+        socket.off('updateTurnBigBlind');
+        socket.off('updateTurnAfterBlinds');
+        socket.off('skiPot');
       };
     }, [gameId, socket, turnCount, playerId, pot, cards, runIndex, dealer]);
   
@@ -765,6 +821,11 @@ window.addEventListener('beforeunload', function(event) {
           console.log ('r4.5');
           console.log(abstractRaise);console.log(numericBetAmount);console.log(interRaise);
           }
+        }
+        else if(SB>0){
+          setPlayerMoney(playerMoney-numericBetAmount+SB);
+          let potski = pot - SB;
+          socket.emit('potski', {potski, gameId});
         }
         else{
         setClientBetAmount(numericBetAmount);
