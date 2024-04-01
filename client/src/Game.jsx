@@ -174,6 +174,13 @@ function Game() {
   const [SB, setSB] = useState(0);
   const [isSmallBlind, setIsSmallBlind] = useState(false);
   const [isBigBlind, setIsBigBlind] = useState(false);
+  const [iSB, setISB] = useState(false);
+  const [iBB, setIBB] = useState(false);
+  const [stopB1, setStopB1] = useState(0);
+  const [stopB2, setStopB2] = useState(0);
+  const [titkiStopper, setTitkiStopper] = useState(0);
+  const [stopper99, setStopper99] = useState(0);
+  const [playerFolded, setPlayerFolded] = useState(false);
 
   const [interBet, setInterBet] = useState(0);
   const [interIndex, setInterIndex] = useState(0);
@@ -268,6 +275,7 @@ function Game() {
         setStopIndex(0);
         setSecBr(0);
         setUpR(0);
+        setISB(false);
       });
     socket.on('turnDealt', (turnCards) => {
       if(runIndex2 <= 1){
@@ -305,6 +313,7 @@ function Game() {
       setStopIndex(0);
       setSecBr(0);
       setUpR(0);
+      setISB(false);
         });
     
     socket.on('riverDealt', (riverCards) => {
@@ -343,13 +352,23 @@ function Game() {
       setStopIndex(0);
       setSecBr(0);
       setUpR(0);
+      setISB(false);
     });
-
+    socket.on('titkiBig', ({titkiBig}) => {
+      if (titkiStopper<1 && stopper99 <1 && isTurn){
+      setIsSmallBlind(false);
+      setIsBigBlind(false);
+      setClientBetAmount(Number(titkiBig));
+      setTitkiStopper(titkiStopper+1);
+    }
+    });
     socket.on('newPot2', ({newPot2, betAmount}) => {
-      setClientBetAmount(Number(betAmount));
       setPot(Number(newPot2));
+      socket.emit('blindSter', {blindSter:Number(betAmount), gameId});
     });
     socket.on('updateTurnAfterBlinds', ({ isTurn, playerId: currentTurnPlayerId }) => {
+      setIsSmallBlind(false);
+      setIsBigBlind(false);
       if (playerId === currentTurnPlayerId) {
         setIsTurn(isTurn);
         setBetResBoolean(true);
@@ -361,16 +380,29 @@ function Game() {
     socket.on('updateTurnBigBlind', ({ isTurn, playerId: currentTurnPlayerId }) => {
       if (playerId === currentTurnPlayerId) {
         setIsTurn(isTurn);
-        if (isSmallBlind && isTurn) {
-          if (playerMoney>50){
+        setIsSmallBlind(false);
+        if (isBigBlind && isTurn && stopB2<1) {
+          if (playerMoney>=50 && stopper99<1){
+            console.log(`player money:  ${playerMoney} `)
           setPlayerMoney(playerMoney - 50);
+          console.log(`player money:  ${playerMoney} `)
           socket.emit('potBB', {potBB: 50, gameId});
-        } else {
+          setStopper99(stopper99+1);
+          setIsTurn(false);
+          console.log(`player money:  ${playerMoney} `)
+        } else if (playerMoney<50 && stopper99<1){
           socket.emit('potBB', {potBB: playerMoney, gameId});
           setPlayerMoney(playerMoney-playerMoney);
+          setStopper99(stopper99+1);
+          setIsTurn(false);
+          console.log(`player money:  ${playerMoney} 2`)
         }
+        console.log(`player money:  ${playerMoney} 3`)
+          setStopB2(stopB2+1);
           setIsBigBlind(false); 
+          console.log(`player money:  ${playerMoney} 4`)
         }
+        console.log(`player money:  ${playerMoney} 5`)
         console.log('Update turn event received');
         console.log('isBigBlind:', isBigBlind);
         console.log('isTurn:', isTurn);
@@ -379,17 +411,22 @@ function Game() {
     socket.on('updateTurnSmallBlind', ({ isTurn, playerId: currentTurnPlayerId }) => {
       if (playerId === currentTurnPlayerId) {
         setIsTurn(isTurn);
-        if (isSmallBlind && isTurn) {
+        setISB(true);
+        if (isSmallBlind && isTurn && stopB1<1) {
           if (playerMoney>25){
           setPlayerMoney(playerMoney - 25);
           setSB(25);
           socket.emit('potSB', {potSB: 25, gameId});
+          setIsTurn(false);
         } else {
           socket.emit('potSB', {potSB: playerMoney, gameId});
           setPlayerMoney(playerMoney-playerMoney);
+          setIsTurn(false);
         }
-          setIsSmallBlind(false); 
+          setStopB1(stopB1+1);
+          setIsSmallBlind(false);
         }
+        
         console.log('Update turn event received');
         console.log('isSmallBlind:', isSmallBlind);
         console.log('isTurn:', isTurn);
@@ -643,19 +680,174 @@ socket.on('bB', () => {
 socket.on('skiPot', ({skiPot}) => {
   setPot(Number(skiPot));
   });
+socket.on('lll2', ({lll2}) => {
+  if (isTurn){
+  setPlayerMoney(playerMoney-Number(lll2));
+  }
+});
+socket.on('lll3', ({lll3}) => {
+  if (isTurn){
+  setPlayerMoney(playerMoney-Number(lll3));
+  }
+});
+socket.on('rrr3', ({rrr3}) => {
+  if (isTurn){
+  setPlayerMoney(playerMoney-Number(rrr3));
+  }
+});
+socket.on('lll4', ({lll4}) => {
+  if (isTurn){
+  setPlayerMoney(playerMoney-Number(lll4));
+  }
+});
+socket.on('lll22', ({lll22}) => {
+  if (isTurn){
+  setPlayerMoney(playerMoney-Number(lll22));
+  }
+});
+socket.on('lll223', ({lll223}) => {
+  if (isTurn){
+  setPlayerMoney(playerMoney-Number(lll223));
+  }
+});
+socket.on('preflop008', ({preflop008}) => {
+  if (isTurn){
+  setPlayerMoney(playerMoney-Number(preflop008));
+  }
+});
+socket.on('preflop0082', ({preflop0082}) => {
+  if (isTurn){
+  setPlayerMoney(playerMoney-Number(preflop0082));
+  }
+});
+socket.on('preflop0085', ({preflop0085}) => {
+  if (isTurn){
+  setPlayerMoney(playerMoney-Number(preflop0085));
+  }
+});
+socket.on('rr2235', ({rr2235}) => {
+  if (isTurn){
+  setPlayerMoney(playerMoney-Number(rr2235));
+  }
+});
+socket.on('preflop149999', ({preflop149999}) => {
+  if (isTurn){
+  setPlayerMoney(playerMoney-Number(preflop149999));
+  }
+});
+socket.on('preflop31', ({preflop31}) => {
+  if (isTurn){
+  setPlayerMoney(playerMoney-Number(preflop31));
+  }
+});
+socket.on('tripprefin', ({tripprefin}) => {
+  if (isTurn){
+  setPlayerMoney(playerMoney-Number(tripprefin));
+  }
+});
+socket.on('preflopXX', ({preflopXX}) => {
+  if (isTurn){
+  setPlayerMoney(playerMoney-Number(preflopXX));
+  }
+});
+socket.on('tgTG', ({tgTG}) => {
+  if (isTurn){
+  setPlayerMoney(playerMoney-Number(tgTG));
+  }
+});
+socket.on('preflopOO', ({preflopOO}) => {
+  if (isTurn){
+  setPlayerMoney(playerMoney-Number(preflopOO));
+  }
+});
+socket.on('preflop1454', ({preflop1454}) => {
+  if (isTurn){
+  setPlayerMoney(playerMoney-Number(preflop1454));
+  }
+});
+socket.on('zXY', ({zXY}) => {
+  if (isTurn){
+  setPlayerMoney(playerMoney-Number(zXY));
+  }
+});
+socket.on('jjII', ({jjII}) => {
+  if (isTurn){
+  setPlayerMoney(playerMoney-Number(jjII));
+  }
+});
+socket.on('jjKK', ({jjKK}) => {
+  if (isTurn){
+  setPlayerMoney(playerMoney-Number(jjKK));
+  }
+});
+socket.on('ccCC', ({ccCC}) => {
+  if (isTurn){
+  setPlayerMoney(playerMoney-Number(ccCC));
+  }
+});
+socket.on('ccCC2', ({ccCC2}) => {
+  if (isTurn){
+  setPlayerMoney(playerMoney-Number(ccCC2));
+  }
+});
+socket.on('yyTT', ({yyTT}) => {
+  if (isTurn){
+  setPlayerMoney(playerMoney-Number(yyTT));
+  }
+});
+socket.on('jjKK2', ({jjKK2}) => {
+  if (isTurn){
+  setPlayerMoney(playerMoney-Number(jjKK2));
+  }
+});
+socket.on('ccCC3', ({ccCC3}) => {
+  if (isTurn){
+  setPlayerMoney(playerMoney-Number(ccCC3));
+  }
+});
+socket.on('yyTT33', ({yyTT33}) => {
+  if (isTurn){
+  setPlayerMoney(playerMoney-Number(yyTT33));
+  }
+});
+socket.on('yyTTKK', ({yyTTKK}) => {
+  if (isTurn){
+  setPlayerMoney(playerMoney-Number(yyTTKK));
+  }
+});
+socket.on('gimmeCashUpdate', () => {
+  socket.emit('cashUpdate', {cashUpdate: playerMoney, playerId, gameId});
+});
 
+socket.on('oneChi', ({oneChi}) => {
+  if (isTurn){
+    setPlayerMoney(playerMoney-Number(oneChi));
+    }
+});
+socket.on('tootsieD', ({tootsieD}) => {
+  if (isTurn){
+    setPlayerMoney(playerMoney-Number(tootsieD));
+    }
+});
+socket.on('thatCase', ({thatCase}) => {
+  if (isTurn){
+    setPlayerMoney(playerMoney-Number(thatCase));
+    }
+});
+socket.on('playerFolded', () => {
+  if (isTurn){
+    setPlayerFolded(true);
+    }
+});
 
-
-
-
-
-
-
-
-
+if (playerFolded && isTurn){
+  socket.emit('foldSkip', {gameId});
+};
 
 
 socket.on('newHand', () => {
+  setPlayerFolded(false);
+  socket.emit('requestCashUpdate', {gameId}); 
   setPlayerHand([]);
   setCheckNoShow(false);
   setBetResBoolean(false);
@@ -687,9 +879,18 @@ socket.on('newHand', () => {
   setStopIndex(0);
   setSecBr(0);
   setUpR(0);
-  setIsSmallBlind(false);
-  setIsBigBlind(false);
-})
+  setIsSmallBlind(true);
+  setIsBigBlind(true);
+  setISB(false);
+  setStopB1(0);
+  setStopB2(0);
+  setTitkiStopper(0);
+  setStopper99(0);
+  setTurnCount(0);
+  setTurnCount2(0);
+  setTurnCount3(0);
+  socket.emit('gameSequence2', { gameId });
+});
 
 window.addEventListener('beforeunload', function(event) {
   // Emit an event to the server indicating the player is leaving the game
@@ -698,6 +899,7 @@ window.addEventListener('beforeunload', function(event) {
                
       return () => {
         socket.off('gameUpdated', handleGameUpdated);
+        socket.off('noCheck');
         socket.off('gameStarted');
         socket.off('cardsDealt');
         socket.off('flopDealt');
@@ -739,7 +941,49 @@ window.addEventListener('beforeunload', function(event) {
         socket.off('updateTurnSmallBlind');
         socket.off('updateTurnBigBlind');
         socket.off('updateTurnAfterBlinds');
+        socket.off('newPot2');
         socket.off('skiPot');
+        socket.off('lll2');
+        socket.off('lll3');
+        socket.off('rrr3');
+        socket.off('lll4');
+        socket.off('lll22');
+        socket.off('lll223');
+        socket.off('preflop008');
+        socket.off('preflop0082');
+        socket.off('preflop0085');
+        socket.off('preflop149999');
+        socket.off('rr2235');
+        socket.off('preflop31');
+        socket.off('tripprefin');
+        socket.off('preflopXX');
+        socket.off('tgTG');
+        socket.off('preflopOO');
+        socket.off('preflop1454');
+        socket.off('zXY');
+        socket.off('jjII');
+        socket.off('jjKK');
+        socket.off('ccCC');
+        socket.off('ccCC2');
+        socket.off('yyTT');
+        socket.off('jjKK2');
+        socket.off('ccCC3');
+        socket.off('yyTT33');
+        socket.off('yyTTKK');
+        socket.off('newHand');
+        socket.off('titkiBig');
+        socket.off('onlyBetRes');
+        socket.off('goFlop');
+        socket.off('goTurn');
+        socket.off('goRiver');
+        socket.off('gimmeCashUpdate');
+        socket.off('betRezzySecRaise');
+        socket.off('potPlus'); 
+        socket.off('secSEC');
+        socket.off('oneChi');
+        socket.off('tootsieD');
+        socket.off('thatCase');
+        socket.off('playerFolded');
       };
     }, [gameId, socket, turnCount, playerId, pot, cards, runIndex, dealer]);
   
@@ -826,6 +1070,7 @@ window.addEventListener('beforeunload', function(event) {
           setPlayerMoney(playerMoney-numericBetAmount+SB);
           let potski = pot - SB;
           socket.emit('potski', {potski, gameId});
+          setSB(0);
         }
         else{
         setClientBetAmount(numericBetAmount);
