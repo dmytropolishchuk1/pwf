@@ -181,6 +181,7 @@ function Game() {
   const [titkiStopper, setTitkiStopper] = useState(0);
   const [stopper99, setStopper99] = useState(0);
   const [playerFolded, setPlayerFolded] = useState(false);
+  const [foldedChipsSave, setFoldedChipsSave] = useState(0);
 
   const [interBet, setInterBet] = useState(0);
   const [interIndex, setInterIndex] = useState(0);
@@ -219,6 +220,7 @@ function Game() {
       setGameState(game);
       setPlayersInGame(game.playersIds);
     };
+
 
     socket.on('gameUpdated', handleGameUpdated);
 
@@ -457,16 +459,28 @@ function Game() {
       setGameStarted(true);
 });
     socket.on('potUpdated', ({ betAmount }) => {
-      console.log(`Received betAmount:`, betAmount, `Current pot:`, pot);
+      console.log(`Received betAmountpotUpd:`, betAmount, `Current pot:`, pot);
       const numericBetAmount = Number(betAmount);
     // Assuming betAmount is the amount to add to the current pot
     const updatedPot = Number(pot) + Number(betAmount);
     console.log(`Updated pot:`, updatedPot);
+    if (!playerFolded){
     setClientBetAmount(numericBetAmount);
+    }
     setPot(Number(updatedPot));
 });
+socket.on('betAfterFold', ({ betAmount }) => {
+  console.log(`Received betAmountAfterFold:`, betAmount);
+  const numericBetAmount = Number(betAmount);
+setClientBetAmount(numericBetAmount);
+});
+socket.on('betAfterFold2', ({ betAmount }) => {
+  console.log(`Received betAmount:`, betAmount);
+  const numericBetAmount = 0;
+setClientBetAmount(0);
+});
 socket.on('raiseEmitted', ({ betAmount }) => {
-  console.log(`Received betAmount:`, betAmount, `Current pot:`, pot);
+  console.log(`Received betAmountRaiseEmitted:`, betAmount, `Current pot:`, pot);
   const numericBetAmount = Number(betAmount);
 // Assuming betAmount is the amount to add to the current pot
 const updatedPot = Number(pot) + Number(betAmount);
@@ -474,24 +488,32 @@ console.log(`Updated pot:`, updatedPot);
 if (noLimitIndex===1){
 setMultiRaise(false);
 const noLimitPot = Number(pot) + numericBetAmount;
+if (!playerFolded){
 setClientBetAmount (numericBetAmount);
+}
 setPot(pot + numericBetAmount);
 }
  else if (noLimitIndex>=2){
   if (interIndex<=1){
     setMultiRaise(true);
-    setClientBetAmount (numericBetAmount);
+    if (!playerFolded){
+      setClientBetAmount (numericBetAmount);
+      }
     setPot(pot + numericBetAmount);
     setInterIndex(interIndex+1);
   }else{
     if (plusBool){
       console.log(`Updated pot:`, updatedPot);
-      setClientBetAmount(numericBetAmount);
+      if (!playerFolded){
+        setClientBetAmount (numericBetAmount);
+        }
       setPot(Number(pot)+numericBetAmount);
         }
     else{    
     setMultiRaise(true);
-    setClientBetAmount (numericBetAmount);
+    if (!playerFolded){
+      setClientBetAmount (numericBetAmount);
+      }
     setPot(pot + numericBetAmount);
   }
 }
@@ -499,12 +521,16 @@ setPot(pot + numericBetAmount);
 else{
   if (plusBool){
 console.log(`Updated pot:`, updatedPot);
-setClientBetAmount(numericBetAmount);
+if (!playerFolded){
+  setClientBetAmount (numericBetAmount);
+  }
 setPot(Number(pot)+numericBetAmount);
   }
   else{
   console.log(`Updated pot:`, updatedPot);
-setClientBetAmount(numericBetAmount);
+  if (!playerFolded){
+    setClientBetAmount (numericBetAmount);
+    }
 setPot(Number(pot)+numericBetAmount);
   }
 }
@@ -544,13 +570,14 @@ socket.on('betRezzySecRaise',({brSecRaise}) => {
     }
   });
   socket.on ('seccyBR', ({seccyBR}) => {
-    if (interBet === 0 && interRaise === 0){
+    if (interBet === 0 && interRaise === 0 && !playerFolded){
     setPlayerMoney(playerMoney-Number(seccyBR));
     setSecBr(Number(seccyBR));
     }else{
       setPlayerMoney(playerMoney+0);
     }
   });
+  
 socket.on('potPlus', ({potPlus}) => {
   setPot(pot+Number(potPlus));
 });
@@ -579,7 +606,7 @@ socket.on('twoPtwoR', ({twoPtwoR}) => {
   }
 });
 socket.on('tootsiePlus', ({tootsiePlus}) => {
-  if (interBet === 0 && interRaise !== 0){
+  if (interBet === 0 && interRaise !== 0 && isTurn){
     setPlayerMoney(playerMoney-Number(tootsiePlus));
   }else{
     setPlayerMoney(playerMoney+0);
@@ -689,6 +716,13 @@ socket.on('lll3', ({lll3}) => {
   if (isTurn){
   setPlayerMoney(playerMoney-Number(lll3));
   }
+});
+socket.on('lll35', ({lll35}) => {
+  if (isTurn && !playerFolded){
+  setPlayerMoney(playerMoney-Number(lll35));    
+} else if (isTurn && playerFolded) {
+  setPlayerMoney(playerMoney+Number(lll35));
+}
 });
 socket.on('rrr3', ({rrr3}) => {
   if (isTurn){
@@ -834,16 +868,54 @@ socket.on('thatCase', ({thatCase}) => {
     setPlayerMoney(playerMoney-Number(thatCase));
     }
 });
+socket.on('folderfourp09', ({folderfourp09}) => {
+  if (isTurn){
+    setPlayerMoney(playerMoney-Number(folderfourp09));
+    }
+});
 socket.on('playerFolded', () => {
   if (isTurn){
     setPlayerFolded(true);
+    setFoldedChipsSave(playerMoney);
     }
 });
-
-if (playerFolded && isTurn){
+socket.on('for4withonefold', ({for4withonefold}) => {
+  if (isTurn){
+    setPlayerMoney(playerMoney-Number(for4withonefold));
+    }
+});
+socket.on('seccyBR20', ({seccyBR20}) => {
+  if (isTurn){
+    setPlayerMoney(playerMoney-Number(seccyBR20));
+    }
+});
+socket.on('twoPtwoR33', ({twoPtwoR33}) => {
+  if (isTurn){
+    setPlayerMoney(playerMoney-Number(twoPtwoR33));
+    }
+});
+socket.on('jjII233', ({jjII233}) => {
+  if (isTurn){
+    setPlayerMoney(playerMoney-Number(jjII233));
+    }
+});
+socket.on('trippyFins', ({trippyFins}) => {
+  if (isTurn){
+    setPlayerMoney(playerMoney-Number(trippyFins));
+    }
+});
+socket.on('criTri', ({criTri}) => {
+  if (isTurn){
+    setPlayerMoney(playerMoney-Number(criTri));
+    }
+});
+/*if (playerFolded && isTurn){
   socket.emit('foldSkip', {gameId});
-};
+};*/
 
+if (playerFolded){
+  setPlayerMoney(foldedChipsSave);
+};
 
 socket.on('newHand', () => {
   setPlayerFolded(false);
@@ -984,6 +1056,16 @@ window.addEventListener('beforeunload', function(event) {
         socket.off('tootsieD');
         socket.off('thatCase');
         socket.off('playerFolded');
+        socket.off('betAfterFold');
+        socket.off('betAfterFold2');
+        socket.off('folderfourp09');
+        socket.off('for4withonefold');
+        socket.off('seccyBR20');
+        socket.off('lll35');
+        socket.off('twoPtwoR33');
+        socket.off('jjII233');
+        socket.off('trippyFins');
+        socket.off('criTri');
       };
     }, [gameId, socket, turnCount, playerId, pot, cards, runIndex, dealer]);
   
@@ -1083,8 +1165,9 @@ window.addEventListener('beforeunload', function(event) {
     }
     else if (actionType === 'check'){
     }
-    socket.emit('playerAction', actionPayload);
-       
+    else if (isTurn && actionType === 'fold'){
+    }
+    socket.emit('playerAction', actionPayload);  
 };
     
 const markPlayerReady = () => {
@@ -1114,33 +1197,33 @@ const markPlayerReady = () => {
         <h2>Your Hand:</h2>
         <div className="hand">
           {/* Assuming you have a way to map card names and suits to images */}
-          {playerHand.map((card, index) => (
+          {!playerFolded && playerHand.map((card, index) => (
             <img key={index} src={cardImages[`${card.name}_${card.suit}`]} alt={`${card.name} of ${card.suit}`} />
           ))}
         </div>
 
         {isTurn &&(
         <div>
-        {!checkNoShow && (
+        {!playerFolded && !checkNoShow && (
         <button onClick={() => handlePlayerAction('check')}>Check</button>
         )}
-        {!betResBoolean && (
+        {!playerFolded && !betResBoolean && (
         <input
           type="number"
           value={clientBetAmount}
           onChange={(e) => setClientBetAmount(Number(e.target.value))}
           placeholder="Bet Amount"
         />)}
-        {betResBoolean && !multiRaise && !inputInteracted && (
+        {!playerFolded && betResBoolean && !multiRaise && !inputInteracted && (
         <button onClick={() => handlePlayerAction('betres', clientBetAmount)}>Bet: ${clientBetAmount}</button>
         )}
-        {betResBoolean && multiRaise && !inputInteracted && (
+        {!playerFolded && betResBoolean && multiRaise && !inputInteracted && (
         <button onClick={() => handlePlayerAction('betres', clientBetAmount)}>Bet//: ${clientBetAmount}</button>
         )}
-        {!betResBoolean && (
+        {!playerFolded && !betResBoolean && (
         <button onClick={() => handlePlayerAction('bet', clientBetAmount)}>Bet</button>
         )}
-        {betResBoolean && (
+        {!playerFolded && betResBoolean && (
         <input
           type="number"
           value={Number(clientBetAmount)}
@@ -1152,10 +1235,12 @@ const markPlayerReady = () => {
           placeholder="Raise Amount"
         />
         )}
-        {betResBoolean && (
+        {!playerFolded && betResBoolean && (
         <button onClick={() => handlePlayerAction('raise', Number(clientBetAmount))}>Raise</button>
         )}
+        {!playerFolded &&(
         <button onClick={() => handlePlayerAction('fold')}>Fold</button>
+        )}
         </div>
       )}
       {!isTurn && (

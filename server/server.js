@@ -89,6 +89,7 @@ function shuffleDeck(stack) {
 async function dealCards(gameId, playersIds) {
   let deck = gameDecks[gameId];
   let game = await Game.findOne({ gameId });
+  game.currentPlayerIndexFoldRef = 0;
 
   playersIds.forEach(playerId => {
     const socketId = playerToSocketMap[playerId];
@@ -176,9 +177,7 @@ async function blindsTurnUpdate(gameId) {
   let game = await Game.findOne({ gameId });
   if (!game || !game.playersIds.length) return;
 
-  // Advance the turn
   game.currentPlayerIndex = (game.dealerIndex + 1) % game.playersIds.length;
-  
   
 
   // Notify players about the turn update
@@ -350,7 +349,11 @@ const gameSchema = new mongoose.Schema({
   },
   storeBet: { type: Number, default: 0 },
   folderPlayers: [String], 
-  updatedPlayersLength: { type: Number, default: 0 }
+  updatedPlayersLength: { type: Number, default: 0 },
+  whoSb: { type: String, default: '' },
+  saveDealer: {type: String, default: ''},
+  foldDelay: { type: Number, default: 0 },
+  currentPlayerIndexFoldRef: { type: Number, default: 0 }
 });
 
   const Game = mongoose.model('Game', gameSchema);
@@ -379,7 +382,7 @@ app.get('/', (req, res) => {
   
         if (!game) {
           // If the game does not exist, create a new one with the current player as the host
-          game = new Game({ gameId, playersIds: [], currentPlayerIndex: 0, pot: 0, isLive: false, tableCards: [], gameTurns: {turnIndex: 0, actionsTaken: 0}, betDifference: 0, playerMoney: [], raiseCount: 0, interBet: 0, betAmount: 0, whoBet:'', whoRaised: '', raiseAmount: 0, raisedHowMany: 0, betresBeforeRaise: 0, whoBetRes: '', betRezzed: 0, minusBet: 0, eventSequence: [], abSy: 0, absy2: 0, whoRaised2: '', aB: 0, aA: 0, dealerIndex: 0, blindStopper: 0, isTurnAdvanced: false, isDealCardsCompleted: false, sB: 0, bB: 0, lT: false, rT: false, reserveRaise: [], combinedBlinds: 0, cashChips: [0,0,0,0,0,0,0,0,0,0], storeBet: 0, folderPlayers: [], updatedPlayersLength: 0 });
+          game = new Game({ gameId, playersIds: [], currentPlayerIndex: 0, pot: 0, isLive: false, tableCards: [], gameTurns: {turnIndex: 0, actionsTaken: 0}, betDifference: 0, playerMoney: [], raiseCount: 0, interBet: 0, betAmount: 0, whoBet:'', whoRaised: '', raiseAmount: 0, raisedHowMany: 0, betresBeforeRaise: 0, whoBetRes: '', betRezzed: 0, minusBet: 0, eventSequence: [], abSy: 0, absy2: 0, whoRaised2: '', aB: 0, aA: 0, dealerIndex: 0, blindStopper: 0, isTurnAdvanced: false, isDealCardsCompleted: false, sB: 0, bB: 0, lT: false, rT: false, reserveRaise: [], combinedBlinds: 0, cashChips: [0,0,0,0,0,0,0,0,0,0], storeBet: 0, folderPlayers: [], updatedPlayersLength: 0, whoSb: '', saveDealer: '', foldDelay: 0, currentPlayerIndexFoldRef: 0 });
           await game.save();
           console.log(`Game created with ID: ${gameId} by host: ${playerId}`);
           if (!game.playersIds.includes(playerId)) {
@@ -399,10 +402,11 @@ app.get('/', (req, res) => {
     });
     socket.on('startGame', async ({ gameId,playersIds }) => {
       let game = await Game.findOne({ gameId: gameId });
-      game.updatedPlayersLength = game.playersIds.length;
+      game.saveDealer = game.dealerIndex;
+      game.playersIds.length = game.playersIds.length;
       const currentPlayerId = game.playersIds[game.currentPlayerIndex];
 
-      if (game) {
+      if (game && game.playersIds.length >= 2) {
         game.isLive = true;
         game.dealerIndex = 0;
         await game.save();
@@ -446,6 +450,7 @@ app.get('/', (req, res) => {
           }
           if (game.blindStopper === 1 && !game.lT && game.isTurnAdvanced){
             io.to(gameId).emit('bB');
+            game.whoSb = currentPlayerId;//previous player saved
             await blindsTurnUpdate2(gameId);
             console.log('big blinding');
             game.blindStopper = 2;
@@ -468,6 +473,7 @@ app.get('/', (req, res) => {
   async function gameSequence2({ gameId,playersIds }) {
     try {
     let game = await Game.findOne({ gameId: gameId });
+    const currentPlayerId = game.playersIds[game.currentPlayerIndex];
     gameDecks[gameId] = shuffleDeck(stack);
     await dealCards(gameId, game.playersIds);
     game.isDealCardsCompleted = true;
@@ -477,6 +483,7 @@ app.get('/', (req, res) => {
       if (!game.isTurnAdvanced && game.isDealCardsCompleted && game.blindStopper < 1) {
           io.to(gameId).emit('sB');
           await blindsTurnUpdate(gameId);
+          game.whoSb = currentPlayerId;
           console.log('small blinding');
           game.blindStopper = 1;
           game.isTurnAdvanced = true; // Set flag to indicate turn advancement
@@ -484,6 +491,7 @@ app.get('/', (req, res) => {
         }
         if (game.blindStopper === 1 && !game.lT && game.isTurnAdvanced){
           io.to(gameId).emit('bB');
+          game.whoSb = currentPlayerId;//previous player saved
           await blindsTurnUpdate2(gameId);
           console.log('big blinding');
           game.blindStopper = 2;
@@ -548,15 +556,77 @@ socket.on('gameSequence2', async ({ gameId }) => {
     });
     let indy = 1;
     let interMed;
-
-
+    
+   
     
 socket.on('playerAction', async ({ gameId, action, playersIds, betAmount, betDiff, pot }) => {
   let game = await Game.findOne({ gameId });
    const currentPlayerId = game.playersIds[game.currentPlayerIndex];
   if (!game) return;
 
-  const thatSeq = [ 'betRes', 'raise', 'betRes', 'raise', 'betRes' ];
+
+  switch (action) {
+    case 'fold':
+      if ((game.playersIds[(game.currentPlayerIndex - 1 + game.playersIds.length) % game.playersIds.length] === game.whoRaised && game.raiseCount === 1) 
+      || (game.playersIds[(game.currentPlayerIndex - 1 + game.playersIds.length) % game.playersIds.length] === game.whoRaised2 && game.raiseCount === 2) 
+      || (game.gameTurns.turnIndex > 0 && (game.playersIds[(game.currentPlayerIndex - 1 + game.playersIds.length) % game.playersIds.length]) === game.whoBet) 
+      || (game.gameTurns.turnIndex > 0 && (game.playersIds[(game.currentPlayerIndex - 1 + game.playersIds.length) % game.playersIds.length]) !== game.whoBet 
+      && (game.playersIds[(game.currentPlayerIndex - 2 + game.playersIds.length) % game.playersIds.length]) === game.whoBet && game.raiseCount === 0 && game.playersIds.length === 3) 
+      || ((game.playersIds[(game.currentPlayerIndex - 1 + game.playersIds.length) % game.playersIds.length] === game.whoRaised) && game.updatedPlayersLength !== 3
+      && game.raiseCount === 1 && game.playersIds.length === 4 && game.gameTurns.turnIndex === 0 
+      || (game.playersIds[(game.currentPlayerIndex - 3 + game.playersIds.length) % game.playersIds.length]) === game.whoRaised && game.updatedPlayersLength !== 3
+      && game.raiseCount === 1 && game.playersIds.length === 4 && game.gameTurns.turnIndex === 0  
+      || (game.playersIds[(game.currentPlayerIndex - 2 + game.playersIds.length) % game.playersIds.length] === game.whoRaised) && game.updatedPlayersLength !== 3
+      && game.raiseCount === 1 && game.playersIds.length === 4 && game.gameTurns.turnIndex === 0 
+      
+      //one player fold 4 players in game 2 raises
+      || game.updatedPlayersLength !== 3
+      && game.raiseCount === 2 && game.playersIds.length === 4 && game.gameTurns.turnIndex === 0 
+
+
+      //two players fold 4 players in game 2 raises
+      || game.updatedPlayersLength === 3
+      && game.raiseCount === 2 && game.playersIds.length === 4 && game.gameTurns.turnIndex === 0  
+      
+
+    //two players fold 4 players in game 1 raise
+      || (game.playersIds[(game.currentPlayerIndex - 3 + game.playersIds.length) % game.playersIds.length]) === game.whoRaised && game.updatedPlayersLength === 3
+      && game.raiseCount === 1 && game.playersIds.length === 4 && game.gameTurns.turnIndex === 0  
+      || (game.playersIds[(game.currentPlayerIndex - 2 + game.playersIds.length) % game.playersIds.length] === game.whoRaised) && game.updatedPlayersLength === 3
+      && game.raiseCount === 1 && game.playersIds.length === 4 && game.gameTurns.turnIndex === 0 
+
+    )){
+        console.log(`previous player: ${(game.playersIds[(game.currentPlayerIndex - 1 + game.playersIds.length) % game.playersIds.length])} previous player-1: ${(game.playersIds[(game.currentPlayerIndex - 2 + game.playersIds.length) % game.playersIds.length])} rc: ${game.raiseCount} wr: ${game.whoRaised}`);
+      }
+      else{
+      game.gameTurns.actionsTaken = game.gameTurns.actionsTaken+1;  
+      }
+      io.to(gameId).emit('playerFolded');
+      game.folderPlayers.push(currentPlayerId);
+      game.foldDelay += 1;
+      game.currentPlayerIndexFoldRef = (game.currentPlayerIndexFoldRef+1) % game.playersIds.length;
+      game.updatedPlayersLength -= 1;
+      console.log(`previous player..: ${(game.playersIds[(game.currentPlayerIndex - 1 + game.playersIds.length) % game.playersIds.length])} cpind-3: ${(game.playersIds[(game.currentPlayerIndex - 3 + game.playersIds.length) % game.playersIds.length])} rc: ${game.raiseCount} wr: ${game.whoRaised} wr2 ${game.whoRaised2}`);
+      console.log(`yes0. actions taken: ${game.gameTurns.actionsTaken}`);
+      if (game.gameTurns.turnIndex === 0 && game.raiseCount === 0){
+        betAmount = 50;
+        console.log('player folded, betAmount saved');
+        io.to(gameId).emit('betAfterFold', { betAmount });
+      }
+      await game.save();
+      break;
+  }
+
+  if (game.folderPlayers.includes(currentPlayerId) && game.gameTurns.actionsTaken !== (game.playersIds.length-game.folderPlayers.length)){
+    await advanceTurn(gameId);
+    /*if (game.raiseCount === 0 && game.gameTurns.turnIndex === 0){
+      game.gameTurns.actionsTaken = game.gameTurns.actionsTaken + 1;
+    }*/
+    console.log(`yes. actions taken: ${game.gameTurns.actionsTaken}`);
+    game.currentPlayerIndexFoldRef = (game.currentPlayerIndexFoldRef+1) % game.playersIds.length;
+    await game.save();
+  }
+
 
   switch (action) {
     case 'check':
@@ -595,7 +665,7 @@ socket.on('playerAction', async ({ gameId, action, playersIds, betAmount, betDif
       let ir = betAmount;
       io.to(gameId).emit('onlyOneRaise', { ir });
     }
-    if (game.updatedPlayersLength != 2 && game.raiseCount === 1 && game.betRezzed < 1 && game.gameTurns.turnIndex !== 0){
+    if (game.updatedPlayersLength != 2 && game.raiseCount === 1 && game.betRezzed < 1 && game.gameTurns.turnIndex !== 0 && (((!game.folderPlayers.some(playerId => game.playersIds.includes(playerId))) && game.playersIds.length > 2))){
       game.whoRaised2 = currentPlayerId;
       game.interBet = betAmount; 
           let ir = betAmount;
@@ -604,6 +674,21 @@ socket.on('playerAction', async ({ gameId, action, playersIds, betAmount, betDif
           console.log('31');
           //wrap currentplayerid and create a new else if to target the next player
     } 
+    else if (game.playersIds.length > 2 && game.updatedPlayersLength === 2 && game.raiseCount === 1 && currentPlayerId !== game.whoRaised && game.whoBet !== currentPlayerId && game.gameTurns.turnIndex > 0){
+      game.whoRaised2 = currentPlayerId;
+      game.interBet = betAmount; 
+      betAmount = betAmount - game.betAmount;
+      io.to(gameId).emit('trippyFins', {trippyFins: betAmount});
+      console.log(`trippyFins absy2:${game.abSy2} absy1 ${game.abSy} gib ${game.interBet } gra ${game.raiseAmount} ba ${betAmount} gba ${game.betAmount}`)
+    }
+    else if (game.updatedPlayersLength === 3 && game.raiseCount === 1 && currentPlayerId !== game.whoRaised && game.whoBet !== currentPlayerId && game.gameTurns.turnIndex > 0 && game.playersIds.length === 4){
+      game.whoRaised2 = currentPlayerId;
+      game.interBet = betAmount; 
+      betAmount = betAmount - game.betAmount;
+      io.to(gameId).emit('trippyFins', {trippyFins: betAmount});
+      console.log(`trippyFins3232 absy2:${game.abSy2} absy1 ${game.abSy} gib ${game.interBet } gra ${game.raiseAmount} ba ${betAmount} gba ${game.betAmount}`)
+    }
+    
     else if (game.updatedPlayersLength != 2 && game.raiseCount === 1 && game.betRezzed < 1 && game.gameTurns.turnIndex === 0 && game.updatedPlayersLength === 3){
       game.whoRaised2 = currentPlayerId;
       game.interBet = betAmount; 
@@ -638,20 +723,35 @@ socket.on('playerAction', async ({ gameId, action, playersIds, betAmount, betDif
         betAmount = betAmount - game.betAmount; 
         io.to(gameId).emit('twoRaise');
         console.log('32');
-    } else if (game.gameTurns.turnIndex !== 0 && game.updatedPlayersLength != 2 && game.raiseCount === 1 && game.betRezzed === 2 && currentPlayerId != game.whoBet && currentPlayerId != game.whoRaised && game.whoBetRes === currentPlayerId){
+    } else if (game.gameTurns.turnIndex !== 0 && game.updatedPlayersLength != 2 && game.raiseCount === 1 && game.betRezzed === 2 && currentPlayerId != game.whoBet && currentPlayerId != game.whoRaised && game.whoBetRes === currentPlayerId && (((!game.folderPlayers.some(playerId => game.playersIds.includes(playerId))) && game.updatedPlayersLength < 4))){
         game.whoRaised2 = currentPlayerId;  
         game.abSy2 = betAmount; 
         io.to(gameId).emit('upRaise', {upRaise: betAmount});
         betAmount = betAmount - game.betresBeforeRaise;
         io.to(gameId).emit('twoRaise');
         console.log('09');
-    } else if (game.updatedPlayersLength === 2 && game.raiseCount === 1){
+    } 
+    else if (game.gameTurns.turnIndex !== 0 && game.updatedPlayersLength != 2 && game.raiseCount === 1 && game.betRezzed === 2 && currentPlayerId != game.whoBet && currentPlayerId != game.whoRaised && game.whoBetRes === currentPlayerId && (((game.folderPlayers.some(playerId => game.playersIds.includes(playerId))) && game.updatedPlayersLength > 3))){
+      game.whoRaised2 = currentPlayerId;  
+      game.abSy2 = betAmount; 
+      betAmount = betAmount - game.betresBeforeRaise;
+      io.to(gameId).emit('twoRaise');
+      io.to(gameId).emit('folderfourp09', {folderfourp09:betAmount});
+      console.log(`09folderfourp ${betAmount} ${game.abSy2} ${game.betresBeforeRaise}`);
+  } 
+      else if (game.updatedPlayersLength === 2 && game.raiseCount === 1){
       game.whoRaised2 = currentPlayerId;
       if (currentPlayerId === game.whoBet){
         game.interBet = betAmount;
         betAmount = betAmount - game.betAmount;
         io.to(gameId).emit('twoPtwoR', {twoPtwoR:betAmount});
         console.log('1.1');
+      }
+      else if(currentPlayerId !== game.whoRaised && game.playersIds.length === 3 && game.gameTurns.turnIndex === 0 && game.currentPlayerIndex === (game.dealerIndex + 2) % game.playersIds.length){
+        game.abSy2 = betAmount;
+        betAmount = betAmount - 50;
+        io.to(gameId).emit('twoPtwoR33', {twoPtwoR33:betAmount});
+        console.log(`1.1 for 3 one fold preflop absy2:${game.abSy2} absy1 ${game.abSy} gib ${game.interBet } gra ${game.raiseAmount} ba ${betAmount} gba ${game.betAmount}`);
       }
       else if (game.gameTurns.turnIndex === 0 && game.currentPlayerIndex === game.dealerIndex){
         game.abSy2 = betAmount;
@@ -674,6 +774,7 @@ socket.on('playerAction', async ({ gameId, action, playersIds, betAmount, betDif
         console.log('005');
       }
     }
+
       if (game.updatedPlayersLength != 2 && game.updatedPlayersLength > 3 && game.raiseCount === 1 && game.betRezzed > 0){
         if (currentPlayerId === game.whoRaised && currentPlayerId != game.whoBetRes){
           console.log('006');
@@ -703,7 +804,7 @@ socket.on('playerAction', async ({ gameId, action, playersIds, betAmount, betDif
           io.to(gameId).emit('yyTTKK', {yyTTKK:betAmount});
           console.log(`yyTTKK absy2:${game.abSy2} absy1 ${game.abSy} gib ${game.interBet } gra ${game.raiseAmount} ba ${betAmount} gba ${game.betAmount}`);
         }
-        else if (currentPlayerId != game.whoBet && currentPlayerId != game.whoRaised && game.betRezzed < 3 && game.gameTurns.turnIndex !== 0){
+        else if (currentPlayerId != game.whoBet && currentPlayerId != game.whoRaised && game.betRezzed < 3 && game.gameTurns.turnIndex !== 0 && (((!game.folderPlayers.some(playerId => game.playersIds.includes(playerId))) && game.updatedPlayersLength < 4))){
           game.abSy2 = betAmount;
           console.log('008');
         }
@@ -725,6 +826,7 @@ socket.on('playerAction', async ({ gameId, action, playersIds, betAmount, betDif
           io.to(gameId).emit('aaTT', {aaTT:betAmount});
           console.log('008.5');
         }
+        
         else if (game.betRezzed > 2 && currentPlayerId != game.whoBet && currentPlayerId != game.whoRaised && game.gameTurns.turnIndex === 0 && game.currentPlayerIndex === (game.dealerIndex + 3) % game.playersIds.length){
           game.abSy2 = betAmount;
           betAmount = betAmount - 50;
@@ -760,6 +862,7 @@ socket.on('playerAction', async ({ gameId, action, playersIds, betAmount, betDif
     game.raiseCount = game.raiseCount+1;
         await advanceTurn(gameId);
         game.eventSequence.push('raise');
+        await game.save();
   }
   
       break;
@@ -778,7 +881,7 @@ socket.on('playerAction', async ({ gameId, action, playersIds, betAmount, betDif
       betAmount = betAmount-game.betAmount; //for two raise scenario
       console.log('11');
     }
-    else if(game.gameTurns.turnIndex !== 0 && game.betRezzed>=1 && game.betRezzed<3 && game.whoBetRes != currentPlayerId && game.updatedPlayersLength < 4){
+    else if(game.gameTurns.turnIndex !== 0 && game.betRezzed>=1 && game.betRezzed<3 && game.whoBetRes != currentPlayerId && game.updatedPlayersLength < 4 && (!game.folderPlayers.some(playerId => game.playersIds.includes(playerId)))){
       betAmount = betAmount+game.betAmount-game.raiseAmount;
       console.log('12');
   }
@@ -834,10 +937,17 @@ socket.on('playerAction', async ({ gameId, action, playersIds, betAmount, betDif
       console.log('thatCase');
       console.log(`thatCase:${game.abSy2} absy1 ${game.abSy} gib ${game.interBet } gra ${game.raiseAmount} ba ${betAmount} gba ${game.betAmount}`);
     }
-    else if(game.gameTurns.turnIndex !== 0 && game.whoRaised === currentPlayerId && game.betRezzed <= 2 ) {
+    else if(game.gameTurns.turnIndex !== 0 && game.whoRaised === currentPlayerId && game.betRezzed <= 2 && (!game.folderPlayers.some(playerId => game.playersIds.includes(playerId)))) {
       betAmount = game.interBet;
       betAmount = betAmount - game.raiseAmount;//for two raise scenario
       console.log('13');
+    }
+    else if(game.gameTurns.turnIndex !== 0 && game.whoRaised === currentPlayerId && game.betRezzed <= 2 && (game.folderPlayers.some(playerId => game.playersIds.includes(playerId)))) {
+      betAmount = game.interBet-game.raiseAmount;//for two raise scenario
+      console.log('13for4withonefold');
+      io.to(gameId).emit('for4withonefold', { for4withonefold: betAmount});
+      console.log(`absy2:${game.abSy2} absy1 ${game.abSy} gib ${game.interBet } gra ${game.raiseAmount} ba ${betAmount} gba ${game.betAmount}`);
+
     }
     else if(game.betRezzed===3 && currentPlayerId != game.whoBet && currentPlayerId === game.whoRaised && game.abSy > 0) {
       betAmount = game.abSy-game.raiseAmount;
@@ -847,6 +957,21 @@ socket.on('playerAction', async ({ gameId, action, playersIds, betAmount, betDif
     } else if (game.whoBet !== currentPlayerId && game.whoRaised2 !== currentPlayerId && game.whoRaised !== currentPlayerId && game.betRezzed === 3 && game.updatedPlayersLength < 4 && game.updatedPlayersLength !== 2){
       io.to(gameId).emit('hhGG', { hhGG: betAmount});
       console.log('14.45');
+    }
+    else if (game.updatedPlayersLength === 3 && game.raiseCount === 2 && currentPlayerId === game.whoRaised && game.whoBet !== currentPlayerId && currentPlayerId !== game.whoRaised2 && game.gameTurns.turnIndex > 0 && game.playersIds.length === 4){
+      betAmount = game.interBet - game.raiseAmount;
+      io.to(gameId).emit('trippyFins', {trippyFins: betAmount});
+      console.log(`trippyFins4242 absy2:${game.abSy2} absy1 ${game.abSy} gib ${game.interBet } gra ${game.raiseAmount} ba ${betAmount} gba ${game.betAmount}`)
+    }
+    else if (game.updatedPlayersLength === 3 && game.raiseCount === 2 && currentPlayerId === game.whoRaised && game.whoBet !== currentPlayerId && currentPlayerId !== game.whoRaised2 && game.gameTurns.turnIndex === 0 && game.playersIds.length === 4){
+      betAmount = game.abSy2 - game.raiseAmount;
+      io.to(gameId).emit('trippyFins', {trippyFins: betAmount});
+      console.log(`trippyFins4343 absy2:${game.abSy2} absy1 ${game.abSy} gib ${game.interBet } gra ${game.raiseAmount} ba ${betAmount} gba ${game.betAmount}`)
+    }
+    else if (game.updatedPlayersLength === 3 && game.raiseCount === 2 && currentPlayerId !== game.whoRaised && game.whoBet !== currentPlayerId && currentPlayerId !== game.whoRaised2 && game.gameTurns.turnIndex === 0 && game.playersIds.length === 4){
+      betAmount = game.interBet - game.raiseAmount;
+      io.to(gameId).emit('trippyFins', {trippyFins: betAmount});
+      console.log(`trippyFins5252 absy2:${game.abSy2} absy1 ${game.abSy} gib ${game.interBet } gra ${game.raiseAmount} ba ${betAmount} gba ${game.betAmount}`)
     }
       else if (game.gameTurns.turnIndex !== 0 && game.whoBet !== currentPlayerId && game.whoRaised === currentPlayerId && game.betRezzed === 3 && game.updatedPlayersLength < 4){
       betAmount = game.abSy2-game.raiseAmount;
@@ -922,8 +1047,8 @@ socket.on('playerAction', async ({ gameId, action, playersIds, betAmount, betDif
         console.log('lll223');
       }
    
-    } else if (game.raiseCount === 0 && game.gameTurns.turnIndex === 0 && game.currentPlayerIndex === (game.dealerIndex + 1) % game.playersIds.length ){
-      game.gameTurns.actionsTaken = game.updatedPlayersLength;
+    } else if (game.raiseCount === 0 && game.gameTurns.turnIndex === 0 && game.currentPlayerIndex === (game.dealerIndex + 1) % game.playersIds.length && (!game.folderPlayers.some(playerId => game.playersIds.includes(playerId)))){
+      game.gameTurns.actionsTaken = game.playersIds.length;
       console.log('lll');
     }
     else if (game.raiseCount === 1 && game.gameTurns.turnIndex === 0 && game.currentPlayerIndex === (game.dealerIndex + 1) % game.playersIds.length && currentPlayerId !== game.whoRaised){
@@ -931,15 +1056,30 @@ socket.on('playerAction', async ({ gameId, action, playersIds, betAmount, betDif
       io.to(gameId).emit('lll2', { lll2: betAmount });
       console.log('lll2');
     }
-    else if (game.raiseCount === 1 && game.gameTurns.turnIndex === 0 && game.currentPlayerIndex === (game.dealerIndex + 2) % game.playersIds.length && currentPlayerId !== game.whoRaised){
+    else if (game.raiseCount === 1 && game.gameTurns.turnIndex === 0 && game.currentPlayerIndex === (game.dealerIndex + 2) % game.playersIds.length && currentPlayerId !== game.whoRaised && (!game.folderPlayers.some(playerId => game.playersIds.includes(playerId)))){
       betAmount=betAmount-25;
       io.to(gameId).emit('lll3', { lll3: betAmount });
       console.log('lll3');
     }
-    else if (game.raiseCount === 1 && game.gameTurns.turnIndex === 0 && game.currentPlayerIndex === (game.dealerIndex + 3) % game.playersIds.length && currentPlayerId !== game.whoRaised){
+    else if (game.raiseCount === 1 && game.gameTurns.turnIndex === 0 && game.currentPlayerIndex === (game.dealerIndex + 2) % game.playersIds.length && currentPlayerId !== game.whoRaised && (game.folderPlayers.some(playerId => game.playersIds.includes(playerId))) && game.playersIds.length >= 3){
+      betAmount=game.raiseAmount-50;
+      io.to(gameId).emit('lll35', { lll35: betAmount });
+      console.log(`lll35 absy2:${game.abSy2} absy1 ${game.abSy} gib ${game.interBet } gra ${game.raiseAmount} ba ${betAmount} gba ${game.betAmount}`);
+    }
+    else if (game.raiseCount === 1 && game.gameTurns.turnIndex === 0 && game.currentPlayerIndex === (game.dealerIndex + 3) % game.playersIds.length && currentPlayerId !== game.whoRaised && (!game.folderPlayers.some(playerId => game.playersIds.includes(playerId)))){
       betAmount=betAmount;
       io.to(gameId).emit('lll4', { lll4: betAmount });
       console.log('lll4');
+    }
+    else if (game.raiseCount === 1 && game.gameTurns.turnIndex === 0 && game.currentPlayerIndex === (game.dealerIndex + 3) % game.playersIds.length && currentPlayerId !== game.whoRaised && (game.folderPlayers.some(playerId => game.playersIds.includes(playerId))) && game.playersIds.length === 3 && game.updatedPlayersLength === 2){
+      betAmount=betAmount-25;
+      io.to(gameId).emit('lll4', { lll4: betAmount });
+      console.log('lll4 with folder');
+    }
+    else if (game.updatedPlayersLength != 2 && game.updatedPlayersLength < 4 && game.playersIds.length === 4 && game.raiseCount === 1 && currentPlayerId != game.whoBet && currentPlayerId != game.whoRaised && game.gameTurns.turnIndex === 0 && game.currentPlayerIndex === (game.dealerIndex + 3) % game.playersIds.length){
+      betAmount = game.raiseAmount - 50;
+      io.to(gameId).emit('criTri', { criTri: betAmount });
+      console.log('1533');
     }
     else if (game.updatedPlayersLength != 2 && game.updatedPlayersLength < 4 && game.raiseCount === 1 && game.whoBetRes === currentPlayerId && currentPlayerId != game.whoBet && currentPlayerId != game.whoRaised){
       betAmount = game.raiseAmount - game.betresBeforeRaise;
@@ -979,6 +1119,11 @@ socket.on('playerAction', async ({ gameId, action, playersIds, betAmount, betDif
       // io.to(gameId).emit('jjII', { jjII: betAmount });
       console.log(`jjII2 ${betAmount} ${game.betAmount} ${game.abSy2} ${game.raiseAmount}`);
     }
+    else if(game.updatedPlayersLength === 2 && game.playersIds.length === 3 && game.raiseCount === 1 && currentPlayerId !== game.whoBet && currentPlayerId !== game.whoRaised && game.gameTurns.turnIndex > 0){
+      betAmount = game.raiseAmount-game.betAmount;
+      io.to(gameId).emit('jjII233', { jjII233: betAmount });
+      console.log(`jjII233 ${betAmount} ${game.betAmount} ${game.abSy2} ${game.raiseAmount}`);
+    }
       else{
         if (game.updatedPlayersLength != 2){
       betAmount = game.raiseAmount;
@@ -988,40 +1133,57 @@ socket.on('playerAction', async ({ gameId, action, playersIds, betAmount, betDif
         betAmount = betAmount-game.betAmount;
         console.log('001100');
       }
-      else if(game.updatedPlayersLength === 2 && game.gameTurns.turnIndex === 0 && game.raiseCount === 2){
+      else if(game.updatedPlayersLength === 2 && game.gameTurns.turnIndex === 0 && game.raiseCount === 2 && game.playersIds.length !== 3){
         betAmount = game.abSy2-game.storeBet;
         io.to(gameId).emit('tootsieD', { tootsieD: betAmount });
         console.log('001101');
+        console.log(`${betAmount} ${game.betAmount} ${game.abSy2} ${game.raiseAmount} ${game.storeBet} ${game.interBet}`)
+      }
+      else if(game.updatedPlayersLength === 2 && currentPlayerId === game.whoRaised && currentPlayerId !== game.whoRaised2 && game.gameTurns.turnIndex === 0 && game.raiseCount === 2 && game.playersIds.length === 3){
+        if (game.interBet > game.abSy2){
+        betAmount = game.interBet-game.raiseAmount;
+        }else{
+        betAmount = game.abSy2-game.raiseAmount;
+        }
+        io.to(gameId).emit('tootsieD', { tootsieD: betAmount });
+        console.log('001101 for 3 with folder');
+        console.log(`${betAmount} ${game.betAmount} ${game.abSy2} ${game.raiseAmount} ${game.storeBet} ${game.interBet}`)
+      }
+      else if (game.updatedPlayersLength === 2 && game.raiseCount === 2 && currentPlayerId !== game.whoBet && currentPlayerId !== game.whoRaised2 && game.playersIds.length > 2 && game.gameTurns.turnIndex > 0 && game.abSy > game.interBet){
+        betAmount = game.abSy-game.raiseAmount;
+        io.to(gameId).emit('tootsiePlus', { tootsiePlus: betAmount });
+        console.log(`tootsieplus22 ${game.interBet} ${game.raiseAmount} ${game.storeBet}  ${game.abSy2}`);
       }
       else if (game.updatedPlayersLength === 2 && currentPlayerId === game.whoRaised){
         betAmount = game.interBet-game.raiseAmount;
         io.to(gameId).emit('tootsiePlus', { tootsiePlus: betAmount });
         console.log(`${game.interBet} ${game.raiseAmount}`);
       }
+      
     }
 
     console.log(`Action ${action} processed for player ${currentPlayerId}`);
     io.to(gameId).emit('noCheck');
     io.to(gameId).emit('resetTurn');
+    game.currentPlayerIndexFoldRef = (game.currentPlayerIndexFoldRef+1) % game.playersIds.length;
+    await game.save();
     await advanceTurn(gameId);
     game.eventSequence.push('betRes');
     console.log(game.eventSequence);
     console.log (`gti ${game.gameTurns.turnIndex} gpidl ${game.playersIds.length} gwr ${game.whoRaised} gwr2 ${game.whoRaised2} gbr ${game.betRezzed} gcpi ${game.currentPlayerIndex}`);
   }
       break;
-    case 'fold':
-      io.to(gameId).emit('playerFolded');
-      game.folderPlayers.push(currentPlayerId);
-      game.updatedPlayersLength -= 1;
-      await advanceTurn(gameId);
-      break;
+
+
   }
+
 
   if (action === 'raise' || action === 'betres'){
     io.to(gameId).emit('raiseEmitted', { betAmount, pot:game.pot });
   }else if (action === 'bet'){
     io.to(gameId).emit('potUpdated', { betAmount, pot:game.pot });
   }
+
 
   if (game.updatedPlayersLength != 2 && game.raiseCount === 1 && game.betRezzed > 0 && game.updatedPlayersLength<4){
     io.to(gameId).emit('minusBet');
@@ -1033,32 +1195,118 @@ socket.on('playerAction', async ({ gameId, action, playersIds, betAmount, betDif
       console.log('hello2');
     }
 
-  if (game.gameTurns.turnIndex !== 0 && game.updatedPlayersLength != 2 && game.raiseCount === 2 && game.whoBet !== currentPlayerId && game.whoRaised != currentPlayerId && game.betRezzed === 2 && game.updatedPlayersLength < 4){
+  if (game.gameTurns.turnIndex !== 0 && game.updatedPlayersLength != 2 && game.raiseCount === 2 && game.whoBet !== currentPlayerId && game.whoRaised != currentPlayerId && game.betRezzed === 2 && game.updatedPlayersLength < 4 && (((!game.folderPlayers.some(playerId => game.playersIds.includes(playerId)))&& game.betRezzed < 3 ))){
     io.to(gameId).emit('seccyBR', {seccyBR: betAmount});
     console.log('yesw1');
   }  
+  
+
+
+  if ((game.gameTurns.turnIndex > 0 || game.gameTurns.turnIndex === 0 && game.raiseCount > 0 ) && game.folderPlayers.includes(game.playersIds[(game.currentPlayerIndex+1)%game.playersIds.length])){
+    await advanceTurn(gameId);//risky, may need a different approach
+    console.log(`folder's turn, skipping folder`);
+    await game.save();
+  }
+console.log(`you know ${game.playersIds[(game.currentPlayerIndex+1)%game.playersIds.length]}`);
+
 
   /*else if (game.raiseCount === 2 && game.whoBet !== currentPlayerId && game.whoRaised === currentPlayerId && game.betRezzed === 3){
     betAmount = game.abSy2-game.raiseAmount;
     console.log(`yesw2 gameRA:${game.raiseAmount} gameBA:${game.betAmount} gameabsy2:${game.abSy2}`);
   } */
 
+  console.log(`yes22. actions taken: ${game.gameTurns.actionsTaken} and curindfold: ${game.currentPlayerIndexFoldRef}`);
 
 
-    if (game.gameTurns.actionsTaken === game.updatedPlayersLength) {
+
+    if (game.gameTurns.turnIndex === 0 && game.playersIds.length > 2 && game.raiseCount === 0 && currentPlayerId === game.playersIds[(game.dealerIndex+1)] && game.folderPlayers.includes(currentPlayerId)){
+      game.gameTurns.actionsTaken = (game.playersIds.length-game.folderPlayers.length);
+    }
+
+    if (game.folderPlayers.length === (game.playersIds.length-1) && game.playersIds.length>1){
+      game.gameTurns.actionsTaken = game.playersIds.length-game.folderPlayers.length;
+      //isWinner implementation goes here
+      game.gameTurns.turnIndex = 3;
+      await game.save();
+      console.log('all but one folded, new hand');
+    }
+
+    console.log(`cpid ${currentPlayerId} gfp ${game.folderPlayers} ${game.whoSb} ${game.playersIds[(game.dealerIndex+1)]}`)
+    if (game.gameTurns.actionsTaken === (game.playersIds.length-game.folderPlayers.length)) {
     // Reset actionsTaken for the next round of actions
    
     // Move to the next stage of the game
     game.gameTurns.turnIndex = game.gameTurns.turnIndex+1;
     game.gameTurns.actionsTaken = 0;
 
-    
+    const mutexTurns = new Mutex();
 
     // Trigger the appropriate game stage based on turnIndex
     if (game.gameTurns.turnIndex === 1) {
         io.to(gameId).emit('goFlop');
         await blindsTurnUpdate(gameId);
+        if (game.updatedPlayersLength === game.playersIds.length || !game.folderPlayers.includes(game.playersIds[game.dealerIndex+1])){
+        game.currentPlayerIndex = (game.dealerIndex+1);
+        }
+        await game.save();
+        
+        if (game.folderPlayers.includes(game.playersIds[game.dealerIndex]) && game.currentPlayerIndex === game.dealerIndex){
+          mutexTurns.acquire(); 
+          try {
+        await advanceTurn(gameId);
+        game.currentPlayerIndex = (game.currentPlayerIndex + 1) % game.playersIds.length;
+        await game.save();
+         console.log(`advancing turn skipping folder.`);
+          } finally {
+            mutexTurns.release();
+          }
+      }
+        if (game.folderPlayers.includes(game.playersIds[game.dealerIndex+1]) && game.currentPlayerIndex === game.dealerIndex+1){
+          mutexTurns.acquire(); 
+          try {
+        await advanceTurn(gameId);
+        game.currentPlayerIndex = (game.currentPlayerIndex + 1) % game.playersIds.length;
+        await game.save();
+         console.log(`advancing turn skipping folder.`);
+          } finally {
+            mutexTurns.release();
+          }
+        }
+              if (game.folderPlayers.includes(game.playersIds[game.dealerIndex+2]) && game.currentPlayerIndex === game.dealerIndex+2){
+                mutexTurns.acquire(); 
+                try {
+              await advanceTurn(gameId);
+              game.currentPlayerIndex = (game.currentPlayerIndex + 1) % game.playersIds.length;
+              await game.save();
+               console.log(`advancing turn skipping folder.`);
+                } finally {
+                  mutexTurns.release();
+                }
+            }
+                if (game.folderPlayers.includes(game.playersIds[game.dealerIndex+3]) && game.currentPlayerIndex === game.dealerIndex+3){
+                  mutexTurns.acquire(); 
+                  try {
+                await advanceTurn(gameId);
+                game.currentPlayerIndex = (game.currentPlayerIndex + 1) % game.playersIds.length;
+                await game.save();
+                 console.log(`advancing turn skipping folder.`);
+                  } finally {
+                    mutexTurns.release();
+                  }
+              }
+                  if (game.folderPlayers.includes(game.playersIds[game.dealerIndex+4]) && game.currentPlayerIndex === game.dealerIndex+4){
+                    mutexTurns.acquire(); 
+                    try {
+                  await advanceTurn(gameId);
+                  game.currentPlayerIndex = (game.currentPlayerIndex + 1) % game.playersIds.length;
+                  await game.save();
+                   console.log(`advancing turn skipping folder.`);
+                    } finally {
+                      mutexTurns.release();
+                    }
+                  }
         betAmount = 0;
+        io.to(gameId).emit('potUpdated', { betAmount });
         game.betDifference = 0;
         game.raiseCount = 0;
         game.interBet = 0;
@@ -1082,10 +1330,75 @@ socket.on('playerAction', async ({ gameId, action, playersIds, betAmount, betDif
         game.reserveRaise = [];
         game.eventSequence = [];
         game.storeBet = 0;
+        game.whoSb = '';
+        console.log(`${currentPlayerId} ${game.playersIds[game.dealerIndex+1]}`);
     } else if (game.gameTurns.turnIndex === 2) {
         io.to(gameId).emit('goTurn');
         await blindsTurnUpdate(gameId);
+        if (game.updatedPlayersLength === game.playersIds.length || !game.folderPlayers.includes(game.playersIds[game.dealerIndex+1])){
+          game.currentPlayerIndex = (game.dealerIndex+1);
+          }
+        await game.save();
+
+
+       if (game.folderPlayers.includes(game.playersIds[game.dealerIndex]) && game.currentPlayerIndex === game.dealerIndex){
+          mutexTurns.acquire(); 
+          try {
+        await advanceTurn(gameId);
+        game.currentPlayerIndex = (game.currentPlayerIndex + 1) % game.playersIds.length;
+        await game.save();
+         console.log(`advancing turn skipping folder.`);
+          } finally {
+            mutexTurns.release();
+          }
+      }
+        if (game.folderPlayers.includes(game.playersIds[game.dealerIndex+1]) && game.currentPlayerIndex === game.dealerIndex+1){
+          mutexTurns.acquire(); 
+          try {
+        await advanceTurn(gameId);
+        game.currentPlayerIndex = (game.currentPlayerIndex + 1) % game.playersIds.length;
+        await game.save();
+         console.log(`advancing turn skipping folder.`);
+          } finally {
+            mutexTurns.release();
+          }
+        }
+              if (game.folderPlayers.includes(game.playersIds[game.dealerIndex+2]) && game.currentPlayerIndex === game.dealerIndex+2){
+                mutexTurns.acquire(); 
+                try {
+              await advanceTurn(gameId);
+              game.currentPlayerIndex = (game.currentPlayerIndex + 1) % game.playersIds.length;
+              await game.save();
+               console.log(`advancing turn skipping folder.`);
+                } finally {
+                  mutexTurns.release();
+                }
+            }
+                if (game.folderPlayers.includes(game.playersIds[game.dealerIndex+3]) && game.currentPlayerIndex === game.dealerIndex+3){
+                  mutexTurns.acquire(); 
+                  try {
+                await advanceTurn(gameId);
+                game.currentPlayerIndex = (game.currentPlayerIndex + 1) % game.playersIds.length;
+                await game.save();
+                 console.log(`advancing turn skipping folder.`);
+                  } finally {
+                    mutexTurns.release();
+                  }
+              }
+                  if (game.folderPlayers.includes(game.playersIds[game.dealerIndex+4]) && game.currentPlayerIndex === game.dealerIndex+4){
+                    mutexTurns.acquire(); 
+                    try {
+                  await advanceTurn(gameId);
+                  game.currentPlayerIndex = (game.currentPlayerIndex + 1) % game.playersIds.length;
+                  await game.save();
+                   console.log(`advancing turn skipping folder.`);
+                    } finally {
+                      mutexTurns.release();
+                    }
+                  }
+
         betAmount = 0;
+        io.to(gameId).emit('potUpdated', { betAmount });
         game.betDifference = 0;
         game.raiseCount = 0;
         game.interBet = 0;
@@ -1109,10 +1422,73 @@ socket.on('playerAction', async ({ gameId, action, playersIds, betAmount, betDif
         game.reserveRaise = [];
         game.eventSequence = [];
         game.storeBet = 0;
+        game.whoSb = '';
+        console.log(`${currentPlayerId} ${game.playersIds[game.dealerIndex+1]}`);
     } else if (game.gameTurns.turnIndex === 3) {
         io.to(gameId).emit('goRiver');
         await blindsTurnUpdate(gameId);
+        if (game.updatedPlayersLength === game.playersIds.length || !game.folderPlayers.includes(game.playersIds[game.dealerIndex+1])){
+          game.currentPlayerIndex = (game.dealerIndex+1);
+          }
+        await game.save();
+
+       if (game.folderPlayers.includes(game.playersIds[game.dealerIndex]) && game.currentPlayerIndex === game.dealerIndex){
+          mutexTurns.acquire(); 
+          try {
+        await advanceTurn(gameId);
+        game.currentPlayerIndex = (game.currentPlayerIndex + 1) % game.playersIds.length;
+        await game.save();
+         console.log(`advancing turn skipping folder.`);
+          } finally {
+            mutexTurns.release();
+          }
+      }
+        if (game.folderPlayers.includes(game.playersIds[game.dealerIndex+1]) && game.currentPlayerIndex === game.dealerIndex+1){
+          mutexTurns.acquire(); 
+          try {
+        await advanceTurn(gameId);
+        game.currentPlayerIndex = (game.currentPlayerIndex + 1) % game.playersIds.length;
+        await game.save();
+         console.log(`advancing turn skipping folder.`);
+          } finally {
+            mutexTurns.release();
+          }
+        }
+              if (game.folderPlayers.includes(game.playersIds[game.dealerIndex+2]) && game.currentPlayerIndex === game.dealerIndex+2){
+                mutexTurns.acquire(); 
+                try {
+              await advanceTurn(gameId);
+              game.currentPlayerIndex = (game.currentPlayerIndex + 1) % game.playersIds.length;
+              await game.save();
+               console.log(`advancing turn skipping folder.`);
+                } finally {
+                  mutexTurns.release();
+                }
+            }
+                if (game.folderPlayers.includes(game.playersIds[game.dealerIndex+3]) && game.currentPlayerIndex === game.dealerIndex+3){
+                  mutexTurns.acquire(); 
+                  try {
+                await advanceTurn(gameId);
+                game.currentPlayerIndex = (game.currentPlayerIndex + 1) % game.playersIds.length;
+                await game.save();
+                 console.log(`advancing turn skipping folder.`);
+                  } finally {
+                    mutexTurns.release();
+                  }
+              }
+                  if (game.folderPlayers.includes(game.playersIds[game.dealerIndex+4]) && game.currentPlayerIndex === game.dealerIndex+4){
+                    mutexTurns.acquire(); 
+                    try {
+                  await advanceTurn(gameId);
+                  game.currentPlayerIndex = (game.currentPlayerIndex + 1) % game.playersIds.length;
+                  await game.save();
+                   console.log(`advancing turn skipping folder.`);
+                    } finally {
+                      mutexTurns.release();
+                    }
+                  }
         betAmount = 0;
+        io.to(gameId).emit('potUpdated', { betAmount });
         game.betDifference = 0;
         game.raiseCount = 0;
         game.interBet = 0;
@@ -1136,7 +1512,10 @@ socket.on('playerAction', async ({ gameId, action, playersIds, betAmount, betDif
         game.reserveRaise = [];
         game.eventSequence = [];
         game.storeBet = 0;
-    } else if (game.gameTurns.turnIndex === 4){      
+        game.whoSb = '';
+        console.log(`${currentPlayerId} ${game.playersIds[game.dealerIndex+1]}`);
+    } else if (game.gameTurns.turnIndex === 4){  
+      game.updatedPlayersLength = game.playersIds.length;   
       game.betDifference = 0;
       game.gameTurns.turnIndex = 0;
       game.gameTurns.actionsTaken = 0;
@@ -1167,8 +1546,9 @@ socket.on('playerAction', async ({ gameId, action, playersIds, betAmount, betDif
       game.eventSequence = [];
       game.storeBet = 0;
       game.folderPlayers = [];
+      game.whoSb = '';
       game.dealerIndex = (game.dealerIndex + 1) % game.playersIds.length;
-      game.updatedPlayersLength = game.playersIds.length;
+      game.playersIds.length = game.playersIds.length;
       await game.save();
       const isDealer = game.dealerIndex;
       io.to(gameId).emit('dealerEmitted', { isDealer });
@@ -1189,6 +1569,8 @@ socket.on('foldSkip', async ({gameId}) => {
   const currentPlayerId = game.playersIds[game.currentPlayerIndex];
 
   if (game.folderPlayers.includes(currentPlayerId)){
+    io.to(gameId).emit('heFolded');
+    console.log('heFolded');  
   await advanceTurn(gameId);
   }
 });
@@ -1216,6 +1598,7 @@ socket.on('foldSkip', async ({gameId}) => {
       if (game.readyPlayers.length === game.playersIds.length) {
         // All players are ready, start the game
         game.isLive = true;
+        game.updatedPlayersLength = game.playersIds.length;
         await game.save();
   
         // Notify players that the game has started
