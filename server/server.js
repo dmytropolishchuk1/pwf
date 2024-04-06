@@ -1129,6 +1129,25 @@ socket.on('playerAction', async ({ gameId, action, playersIds, betAmount, betDif
       betAmount = game.raiseAmount;
       console.log('21');
         }
+      else if(game.updatedPlayersLength === 2 && game.playersIds.length === 4 && game.raiseCount === 1 && currentPlayerId === game.whoBet && game.gameTurns.turnIndex !== 0){
+        betAmount = betAmount-game.betAmount;
+        io.to(gameId).emit('tootsieD', { tootsieD: betAmount });
+        console.log('001100quads');
+      }
+      else if(game.updatedPlayersLength === 2 && game.playersIds.length === 4 && game.raiseCount === 2 && currentPlayerId === game.whoBet && game.gameTurns.turnIndex !== 0){
+        if (game.interBet > game.abSy2){
+        betAmount = game.interBet-game.raiseAmount;
+        }else{
+        betAmount = game.abSy2-game.raiseAmount;  
+        }
+        io.to(gameId).emit('tootsieD', { tootsieD: betAmount });
+        console.log(`001100quadst ${betAmount} ${game.betAmount} ${game.abSy2} ${game.raiseAmount} ${game.interBet}`);
+      }
+      else if(game.updatedPlayersLength === 2 && game.playersIds.length === 4 && game.raiseCount === 2 && currentPlayerId === game.whoRaised && game.gameTurns.turnIndex !== 0){
+        betAmount = game.abSy2-game.raiseAmount;
+        io.to(gameId).emit('tootsieD', { tootsieD: betAmount });
+        console.log('001100quadsy');
+      }
       else if(game.updatedPlayersLength === 2 && currentPlayerId === game.whoBet && game.gameTurns.turnIndex !== 0){
         betAmount = betAmount-game.betAmount;
         console.log('001100');

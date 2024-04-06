@@ -41,3 +41,50 @@ justify-content: center;
 .dealer-chip{
   color: white;
 }
+.floor{
+  position: fixed;
+  display: flex;
+  top: 0;
+  left: 0;
+  height: 100%;
+  width: 100%;
+  background-image: url('./assets/floor.png');
+  background-size: cover;
+  background-repeat: no-repeat;
+  background-position: center;
+}
+.poker-table {
+  position: fixed;
+  display: flex;
+  flex-direction: column;
+  left: 15%;
+  top: 15%;
+  border-radius: 30%;
+  width: 70%;
+  height: 70%;
+  z-index: -1;
+  border: solid black 20px;
+}
+.poker-table img{
+  width: 70%;
+  height: 70%;
+  position: fixed;
+  left: 15%;
+  top: 15%;
+  right: 0;
+  bottom: 0;
+  border-radius: 30%;
+}
+@media (orientation: portrait) {
+  .poker-table {
+    width: 70%;
+    height: 70%;
+  }
+}
+
+@media (orientation: landscape) {
+  .poker-table {
+    width: 70%;
+    height: 70%;
+  }
+}

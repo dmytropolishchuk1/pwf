@@ -61,6 +61,8 @@ import queenClubs from  "./assets/cards/CLUBS_Q.svg";
 import kingClubs from   "./assets/cards/CLUBS_K.svg";
 import aceClubs from    "./assets/cards/CLUBS_A.svg";
 
+import pokerTable from "./assets/pokertable.jpg";
+
 const SERVER_URL = 'http://localhost:3001';
 const socket = io(SERVER_URL);
 
@@ -1178,7 +1180,8 @@ const markPlayerReady = () => {
   
 
     return (
-      <div>
+      <div className="floor">
+      <div className="poker-table"><img src={pokerTable} alt="poker table top view"></img></div>
         <h2>Players in Game:</h2>
         {playersInGame.map((_, index) => (
         <div key={index} style={{ width: '150px', height: '150px', backgroundColor: 'black', margin: '10px' }}>
@@ -1253,7 +1256,7 @@ const markPlayerReady = () => {
             <img key={index} src={cardImages[`${card.name}_${card.suit}`]} alt={`${card.name} of ${card.suit}`} />
           ))}
         </div>
-      </div>
+        </div>
     );
   };
   
