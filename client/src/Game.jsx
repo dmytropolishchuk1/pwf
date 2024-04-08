@@ -61,7 +61,8 @@ import queenClubs from  "./assets/cards/CLUBS_Q.svg";
 import kingClubs from   "./assets/cards/CLUBS_K.svg";
 import aceClubs from    "./assets/cards/CLUBS_A.svg";
 
-import pokerTable from "./assets/pokertable.jpg";
+import cardBack from "./assets/cards/BACK.svg";
+
 
 const SERVER_URL = 'http://localhost:3001';
 const socket = io(SERVER_URL);
@@ -184,6 +185,15 @@ function Game() {
   const [stopper99, setStopper99] = useState(0);
   const [playerFolded, setPlayerFolded] = useState(false);
   const [foldedChipsSave, setFoldedChipsSave] = useState(0);
+  const [playerMarkedReady, setPlayerMarkedReady] = useState(false);
+  const [betDraggingValue, setBetDraggingValue] = useState(0);
+  const [raiseDraggingValue, setRaiseDraggingValue] = useState(0);
+  const [minRaise, setMinRaise] = useState(0);
+  const [raiseLimitReached, setRaiseLimitReached] = useState(false);
+  const [input2Interacted, setInput2Interacted] = useState(false);
+  const [everyonesChips, setEveryonesChips] = useState([]);
+  const [loopNum, setLoopNum] = useState(0);
+  const [copied, setCopied] = useState(false);
 
   const [interBet, setInterBet] = useState(0);
   const [interIndex, setInterIndex] = useState(0);
@@ -235,7 +245,10 @@ function Game() {
       });
     socket.on('chipsDealt', (playerChips) => {
       setPlayerMoney(playerChips);
+      const newEveryonesChips = Array(playersInGame.length).fill(5000);
+      setEveryonesChips(newEveryonesChips);
       console.log(playerChips);
+      console.log(`everyones chips array: ${everyonesChips}`);
     })
     socket.on('noCheck', ()=> {
       setCheckNoShow(true);
@@ -255,6 +268,8 @@ function Game() {
       });
       socket.on('goFlop', () => {
         socket.emit('requestFlop', { gameId });
+        setRaiseLimitReached(false);
+        setInput2Interacted(false);
         setCheckNoShow(false);
         setBetResBoolean(false);
         setClientBetAmount(0);
@@ -293,6 +308,8 @@ function Game() {
     });
     socket.on('goTurn', () => {
       socket.emit('requestTurn', { gameId });
+      setRaiseLimitReached(false);
+      setInput2Interacted(false);
       setCheckNoShow(false);
       setBetResBoolean(false);
       setClientBetAmount(0);
@@ -332,6 +349,8 @@ function Game() {
     });
     socket.on('goRiver', () => {
       socket.emit('requestRiver', { gameId });
+      setRaiseLimitReached(false);
+      setInput2Interacted(false);
       setCheckNoShow(false);
       setBetResBoolean(false);
       setClientBetAmount(0);
@@ -451,11 +470,13 @@ function Game() {
       // Listen for 'playersReady' event to update UI with ready count
     socket.on('playersReady', ({ count, total }) => {
       // Update your UI to show something like "1/2 Players Ready"
-      setGameStatus(`${count}/${total} Players Ready`);
+      setGameStatus(`: ${count}/${total} Players Ready`);
+      setPlayerMarkedReady(true);
     });
 
     // Listen for 'gameStarted' to proceed to the game view
     socket.on('gameStarted', ({ gameId }) => {
+      setPlayerMarkedReady(false);
       socket.emit('startGame', { gameId });
       console.log('Game has started');
       setGameStarted(true);
@@ -906,10 +927,22 @@ socket.on('trippyFins', ({trippyFins}) => {
     setPlayerMoney(playerMoney-Number(trippyFins));
     }
 });
+socket.on('minusDuplicate', ({gameId}) => {
+  socket.emit('duplicateSubtract', {gameId});
+});
 socket.on('criTri', ({criTri}) => {
   if (isTurn){
     setPlayerMoney(playerMoney-Number(criTri));
     }
+});
+socket.on('raiseLimitReached', () => {
+  setRaiseLimitReached(true);
+});
+socket.on('minRaise', ({minRaise}) => {
+    setMinRaise(Number(minRaise)+1);
+});
+socket.on('minRaiseEqBB', ({minRaiseEqBB}) => {
+  setMinRaise(Number(minRaise)+1);
 });
 /*if (playerFolded && isTurn){
   socket.emit('foldSkip', {gameId});
@@ -920,7 +953,9 @@ if (playerFolded){
 };
 
 socket.on('newHand', () => {
+  setRaiseLimitReached(false);
   setPlayerFolded(false);
+  setInput2Interacted(false);
   socket.emit('requestCashUpdate', {gameId}); 
   setPlayerHand([]);
   setCheckNoShow(false);
@@ -970,7 +1005,35 @@ window.addEventListener('beforeunload', function(event) {
   // Emit an event to the server indicating the player is leaving the game
   socket.emit('playerLeaving', { gameId, playerId });
 });
-               
+
+socket.emit('newPlayerChips', {newPlayerChips: playerMoney, gameId, whoseChips:playersInGame.indexOf(playerId)});
+socket.on('newChipsRightBack', ({ newChipsRightBack, whosMoney }) => {
+    setEveryonesChips((prevChips) => {
+      const updatedChips = [...prevChips];
+      const playerIndex = Number(whosMoney);
+      updatedChips[playerIndex] = newChipsRightBack;
+      return updatedChips;
+    });
+    console.log(`everyones chips array: ${everyonesChips}`);
+});
+const playSound = (soundUrl) => {
+  const audio = new Audio(soundUrl);
+  audio.play();
+};
+
+socket.on('emitFoldSound', () => {
+  
+});
+socket.on('emitCheckSound', () => {
+  
+});
+socket.on('emitBetResSound', () => {
+  
+});
+socket.on('emitBetSound', () => {
+  
+});
+
       return () => {
         socket.off('gameUpdated', handleGameUpdated);
         socket.off('noCheck');
@@ -1068,6 +1131,15 @@ window.addEventListener('beforeunload', function(event) {
         socket.off('jjII233');
         socket.off('trippyFins');
         socket.off('criTri');
+        socket.off('duplicateSubtract');
+        socket.off('minRaise');
+        socket.off('raiseLimitReached');
+        socket.off('minRaiseEqBB');
+        socket.off('newChipsRightBack');
+        socket.off('emitBetSound');
+        socket.off('emitBetResSound');
+        socket.off('emitCheckSound');
+        socket.off('emitFoldSound');
       };
     }, [gameId, socket, turnCount, playerId, pot, cards, runIndex, dealer]);
   
@@ -1091,6 +1163,7 @@ window.addEventListener('beforeunload', function(event) {
         setClientBetAmount(numericBetAmount);
         setPlayerMoney(numericPlayerMoney-numericBetAmount);
         setInterBet(numericBetAmount);
+        socket.emit('betSound', {gameId}); 
       }
       else if (isTurn && (actionType === 'raise') && numericBetAmount > 0 && betAmount>0 && betAmount<=playerMoney && numericBetAmount <= numericPlayerMoney) {
         setNoLimitIndex(noLimitIndex+1);
@@ -1105,7 +1178,7 @@ window.addEventListener('beforeunload', function(event) {
         setPlayerMoney(numericPlayerMoney-numericBetAmount);
         setInterRaise(numericBetAmount);console.log('c2');
         }
-        
+        socket.emit('betSound', {gameId}); 
       }
       
       else if (isTurn && actionType === 'betres') {
@@ -1159,98 +1232,161 @@ window.addEventListener('beforeunload', function(event) {
         else{
         setClientBetAmount(numericBetAmount);
         setPlayerMoney(numericPlayerMoney-numericBetAmount);
+        setInputInteracted(false);
+        setInput2Interacted(false);
         console.log ('r5');
       }
-      
+      socket.emit('betResSound', {gameId}); 
   }
       else if (isTurn && actionType === 'check'){
+        socket.emit('checkSound', {gameId}); 
     }
     else if (actionType === 'check'){
+      socket.emit('checkSound', {gameId}); 
     }
     else if (isTurn && actionType === 'fold'){
+      socket.emit('foldSound', {gameId});  
     }
     socket.emit('playerAction', actionPayload);  
+    setBetDraggingValue(0);
+    setRaiseDraggingValue(0);
 };
     
 const markPlayerReady = () => {
   socket.emit('playerReady', { gameId, playerId });
 };
-
-    
+const handleInput = (e) => {
+  setBetDraggingValue(Number(e.target.value));
+};
+const copyToClipboard = () => {
+  navigator.clipboard.writeText(window.location.href);
+  setCopied(true);
+  setTimeout(() => {
+    setCopied(false);
+  }, 500);
+};    
   
 
     return (
       <div className="floor">
-      <div className="poker-table"><img src={pokerTable} alt="poker table top view"></img></div>
-        <h2>Players in Game:</h2>
+      {!gameStarted &&(
+      <button className="invite-link" onClick={copyToClipboard}>
+      <h1>{copied ? 'Copied!' : 'Copy Invite Link'}</h1>
+      </button>
+      )}
+      <div className="poker-table"><div className="tablecloth"></div></div>
         {playersInGame.map((_, index) => (
-        <div key={index} style={{ width: '150px', height: '150px', backgroundColor: 'black', margin: '10px' }}>
+        <div key={index} className={`player-${index}`} style={{ width: '70px', height: '120px', backgroundColor: 'black', margin: '10px', display: 'flex', flexDirection: 'column', justifyContent: 'center', textAlign: 'center' }}>
         {index === dealer && <p className="dealer-chip">Dealer</p>}
+        {index === playersInGame.indexOf(playerId) && <p className="you">You</p>}
+        {<p className="chips">$ {everyonesChips[index]}</p>}
         </div>
         ))}
-        {!gameStarted && (
+        {!gameStarted && playersInGame.length>=2 &&(
         <>
-        <button onClick={markPlayerReady}>Start Game</button>
-        <p>{gameStatus}</p>
+        <button
+        className={` ${playerMarkedReady ? 'player-ready' : 'start-game-button'}`}
+        onClick={() => markPlayerReady()}
+        >
+        {playersInGame.length>=2 &&(
+        <h1>Start Game <span className="howmany-ready">{gameStatus}</span>
+        </h1>
+        )}
+        </button>
         </>
         )}
           
-          <p>Chips: ${playerMoney}</p>
-          <p>Pot: ${Number(pot)}</p>
-        <h2>Your Hand:</h2>
-        <div className="hand">
-          {/* Assuming you have a way to map card names and suits to images */}
+          <div className="pot"><p>Pot: ${Number(pot)}</p></div>
+          <div className={`hand hand-${playersInGame.indexOf(playerId)}`}>
+          {/* mapping current player's cards */}
           {!playerFolded && playerHand.map((card, index) => (
-            <img key={index} src={cardImages[`${card.name}_${card.suit}`]} alt={`${card.name} of ${card.suit}`} />
+            <img key={index} className='cards' src={cardImages[`${card.name}_${card.suit}`]} alt={`${card.name} of ${card.suit}`} />  
+          ))}
+        </div>
+        {/* mapping card backs for non-current players */}
+        <div className="ncp-container">
+          {playersInGame.map((_, index) => (
+            index !== playersInGame.indexOf(playerId) && (
+              <div className={`ncp-${index}`}>
+              <img
+                key={index}
+                src={cardBack}
+                className="ncp"
+                alt="back of the card"
+              ></img>
+              <img
+                key={index}
+                src={cardBack}
+                className="ncp"
+                alt="back of the card"
+              ></img>
+              </div>
+            )
           ))}
         </div>
 
         {isTurn &&(
-        <div>
+        <div className="action-choices">
         {!playerFolded && !checkNoShow && (
-        <button onClick={() => handlePlayerAction('check')}>Check</button>
+        <button className="check" onClick={() => handlePlayerAction('check')}><p>Check</p></button>
         )}
-        {!playerFolded && !betResBoolean && (
+        {!playerFolded && !betResBoolean &&(
+          <div>
+          <div className="number-dragging"><p>{inputInteracted || input2Interacted ? betDraggingValue : `Drag to Bet`}</p></div>
         <input
-          type="number"
+          className="draggable"
+          type="range"
+          min={playerMoney<25 ? 0 : 25}
+          max={playerMoney}
           value={clientBetAmount}
-          onChange={(e) => setClientBetAmount(Number(e.target.value))}
+          onInput={handleInput}
+          onChange={(e) => {setClientBetAmount(Number(e.target.value))
+                            setInput2Interacted(true);
+                    }}
           placeholder="Bet Amount"
-        />)}
+        />
+        </div>
+        )}
         {!playerFolded && betResBoolean && !multiRaise && !inputInteracted && (
-        <button onClick={() => handlePlayerAction('betres', clientBetAmount)}>Bet: ${clientBetAmount}</button>
+        <button className="check" onClick={() => handlePlayerAction('betres', clientBetAmount)}><p>Bet: ${clientBetAmount}</p></button>
         )}
         {!playerFolded && betResBoolean && multiRaise && !inputInteracted && (
-        <button onClick={() => handlePlayerAction('betres', clientBetAmount)}>Bet//: ${clientBetAmount}</button>
+        <button className="check" onClick={() => handlePlayerAction('betres', clientBetAmount)}><p>Bet: ${clientBetAmount}</p></button>
         )}
         {!playerFolded && !betResBoolean && (
-        <button onClick={() => handlePlayerAction('bet', clientBetAmount)}>Bet</button>
+        <button className="bet" onClick={() => handlePlayerAction('bet', clientBetAmount)}><p>Bet</p></button>
         )}
-        {!playerFolded && betResBoolean && (
+        {!playerFolded && betResBoolean && !raiseLimitReached &&(
+          <div>
+          <div className="number-dragging"><p>{betDraggingValue}</p></div>
         <input
-          type="number"
+          className="draggable"
+          type="range"
           value={Number(clientBetAmount)}
+          min={playerMoney > minRaise ? minRaise : playerMoney} 
+          max={playerMoney}
+          onInput={handleInput}
           onChange={(e) => {
             setClientBetAmount(Number(e.target.value));
             setInputInteracted(true); // Set to true on change
           }}
           onClick={() => setInputInteracted(true)} // Set to true on click
           placeholder="Raise Amount"
-        />
+        /></div>
         )}
-        {!playerFolded && betResBoolean && (
-        <button onClick={() => handlePlayerAction('raise', Number(clientBetAmount))}>Raise</button>
+        {!playerFolded && betResBoolean && inputInteracted && (
+        <button className="bet" onClick={() => handlePlayerAction('raise', Number(clientBetAmount))}><p>Raise</p></button>
         )}
         {!playerFolded &&(
-        <button onClick={() => handlePlayerAction('fold')}>Fold</button>
+        <button className="fold" onClick={() => handlePlayerAction('fold')}><p>Fold</p></button>
         )}
         </div>
       )}
       {!isTurn && (
-        <div>Waiting for other players...</div>
+        <div></div>
       )}
       
-        <h2>Table Cards:</h2>
+
         <div className="flop">
           {tableCards.map((card, index) => (
             <img key={index} src={cardImages[`${card.name}_${card.suit}`]} alt={`${card.name} of ${card.suit}`} />

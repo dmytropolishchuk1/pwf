@@ -9,7 +9,12 @@ left: 37.5%;
 top: 40%;
 text-align: center;
 justify-content: center;
-
+}
+body{
+  font-family: "Rubik", sans-serif;
+}
+p{
+  font-family: "Rubik", sans-serif;
 }
 .join-anchor{
   margin-top: 5%;
@@ -33,58 +38,370 @@ justify-content: center;
   height: 100%;
   width: 100%;
 }
-.player-holder{
-  height: 150px;
-  width: 50px;
-  border: solid black 1px;
-}
-.dealer-chip{
+.dealer-chip, .you, .chips{
   color: white;
 }
-.floor{
+.invite-link{
+  background-color: black;
+  color: aliceblue;
+  border: solid aliceblue 1px;
+  width: 25%;
+  height: 10%;
+}
+.invite-link h1{
+  width: 100%;
+  text-align: center;
+}
+.pot{
+  position: fixed;
+  justify-content: center;
+  text-align: center;
+  top: calc(45% - 75px);
+  left:45%;
+  height: 10%;
+  width: 10%;
+}
+.start-game-button{
+  display: flex;
+  position: fixed;
+  flex-direction: column;
+  height: 10%;
+  width: 40%;
+  top: 3%;
+  left: 30%;
+  text-align: center;
+  justify-content: center;
+  background-color: rgb(141, 33, 33, 0.7);
+  border: solid black 5px;
+  border-radius: 3%;
+}
+.player-ready{
+  display: flex;
+  position: fixed;
+  flex-direction: column;
+  height: 10%;
+  width: 40%;
+  top: 3%;
+  left: 30%;
+  text-align: left;
+  justify-content: center;
+  background-color: rgb(141, 33, 33, 0.7);
+  border: solid black 5px;
+  border-radius: 3%;
+}
+.start-game-button h1{
+  display: flex;
+  height: auto;
+  width: 100%;
+  justify-content: center;
+  text-align: center;
+}
+.player-ready h1{
+  display: flex;
+  height: auto;
+  width: 100%;
+  justify-content: center;
+  text-align: left;
+}
+.hand{
+  display: flex;
+  height: 120px;
+  width: 240px;
+}
+.howmany-ready{
+  display: flex;
+  text-align: right;
+  align-content: end;
+  font-style: italic;
+  font-weight: 400;
+}
+.hand-0 {
   position: fixed;
   display: flex;
+  left:calc(10% + 90px);
+  top: calc(50% - 70px);
+  margin-bottom: 2%;
+}
+.ncp-container{
+  display: flex;
+  height: 120px;
+  width: 240px;
+}
+img.ncp{
+  height: 120px;
+  width: auto;
+}
+.ncp-0{
+  position: fixed;
+  display: flex;
+  left: calc(10% + 90px);
+  top: calc(50% - 70px);
+  margin-bottom: 2%;
+}
+.player-0 {
+  position: fixed;
+  display: flex;
+  left: 10%;
+  top: calc(50% - 80px);
+}
+.hand-1 {
+  position: fixed;
+  display: flex;
+  left:  calc(40% + 140px);
+  top: calc( 10% + 10px);
+  margin-left: 2%;
+}
+.ncp-1 {
+  position: fixed;
+  display: flex;
+  left:  calc(40% + 140px);
+  top: calc( 10% + 10px);
+  margin-left: 2%;
+}
+.player-1 {
+    position: fixed;
+    display: flex;
+    left: calc(40% + 70px);
+    top: calc(10%);
+}
+.ncp-2{
+  position: fixed;
+  display: flex;
+  right: calc(10% + 90px);
+  top: calc(50% - 70px);
+  margin-bottom: 2%;
+}
+.player-2 {
+  position: fixed;
+  display: flex;
+  right: 10%;
+  top: calc(50% - 80px);
+}
+.hand-2 {
+  position: fixed;
+  display: flex;
+  justify-content: end;
+  right: calc(10% + 90px);
+  top: calc(50% - 70px);
+  margin-bottom: 2%;
+}
+.hand-3 {
+  position: fixed;
+  display: flex;
+  left:  calc(40% + 140px);
+  bottom: calc( 10% + 10px);
+  margin-left: 2%;
+}
+.ncp-3 {
+  position: fixed;
+  display: flex;
+  left:  calc(40% + 140px);
+  bottom: calc( 10% + 10px);
+  margin-left: 2%;
+}
+.player-3 {
+    position: fixed;
+    display: flex;
+    left: calc(40% + 70px);
+    bottom: calc(10%);
+}
+
+.floor{
+  position: fixed;
   top: 0;
   left: 0;
   height: 100%;
   width: 100%;
-  background-image: url('./assets/floor.png');
-  background-size: cover;
-  background-repeat: no-repeat;
-  background-position: center;
+  background-color: rgb(141, 33, 33);
 }
 .poker-table {
   position: fixed;
   display: flex;
   flex-direction: column;
-  left: 15%;
-  top: 15%;
+  left: calc(10% - 20px);
+  right: calc(10% - 20px);
+  top: calc(10% - 20px);
+  bottom: calc(10% - 20px);
   border-radius: 30%;
-  width: 70%;
-  height: 70%;
+  width: 80%;
+  height: 80%;
   z-index: -1;
-  border: solid black 20px;
+  padding: 20px;
+  background-color: black;
 }
-.poker-table img{
-  width: 70%;
-  height: 70%;
+.poker-table .tablecloth{
+  width: 80%;
+  height: 80%;
   position: fixed;
-  left: 15%;
-  top: 15%;
+  left: calc(10% - 20px);
+  right: calc(10% - 20px);
+  top: calc(10% - 20px);
+  bottom: calc(10% - 20px);
+  margin-left: 20px;
+  margin-top: 20px;
   right: 0;
   bottom: 0;
   border-radius: 30%;
+  background-color: darkgreen;
 }
+.flop{
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  position: fixed;
+  top: calc(50% - 70px);
+  left: calc(50% - 300px);
+  height: 120px;
+  width: 600px;
+}
+.action-choices{
+  position: fixed;
+  display: flex;
+  flex-direction: row;
+  bottom: 0;
+  left: 25%;
+  width: 50%;
+  height: 10%;
+  border: solid rgb(255, 255, 255) 2px;
+  background-color: whitesmoke;
+  border-radius: 0%;
+}
+button.check, button.bet{
+  border-top: 0;
+  border-bottom: 0;
+  border-right: solid rgb(255, 255, 255) 2px;
+}
+button.check{
+  border-left: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  text-align: center;
+}
+button.bet{
+  border-left: solid rgb(255, 255, 255) 2px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  text-align: center;
+}
+button.fold{
+  border: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  text-align: center;
+}
+.check p, .bet p, .fold p{
+  width: 100%;
+  text-align: center;
+  justify-content: center;
+} 
+.check{
+  display: flex;
+  position: fixed;
+  flex-direction: column;
+  top: 90%;
+  left: 25%;
+  height: 10%;
+  width: 10%;
+  justify-content: center;
+  text-align: center;
+  border-right: solid rgb(255, 255, 255) 2px;
+  background-color: whitesmoke;
+  border-radius: 0%;
+}
+.bet{
+  display: flex;
+  position: fixed;
+  flex-direction: column;
+  top: 90%;
+  left: 55%;
+  height: 10%;
+  width: 10%;
+  justify-content: center;
+  align-content: center;
+  text-align: center;
+  border-right: solid rgb(255, 255, 255) 2px;
+  background-color: whitesmoke;
+  border-radius: 0%;
+}
+.fold{
+  display: flex;
+  position: fixed;
+  flex-direction: column;
+  top: 90%;
+  left: 65%;
+  height: 10%;
+  width: 10%;
+  justify-content: center;
+  align-content: center;
+  text-align: center;
+  border: solid rgb(255, 255, 255) 2px;
+  background-color: whitesmoke;
+  border-radius: 0%;
+}
+.draggable{
+  display: flex;
+  position: fixed;
+  top: 90%;
+  left: 35%;
+  height: 10%;
+  width: 20%;
+  justify-content: center;
+  align-content: center;
+  text-align: center;
+  background-color: whitesmoke;
+  border-radius: 5%;
+}
+.number-dragging{
+  color: rgb(171, 171, 171);
+  display: flex;
+  position: fixed;
+  top: 87.5%;
+  left: 35%;
+  height: 5%;
+  width: 20%;
+  justify-content: center;
+  align-content: center;
+  text-align: center;
+  z-index: 1;
+}
+
 @media (orientation: portrait) {
   .poker-table {
-    width: 70%;
-    height: 70%;
+    width: 80%;
+    height: 80%;
   }
 }
 
 @media (orientation: landscape) {
   .poker-table {
-    width: 70%;
-    height: 70%;
+    width: 80%;
+    height: 80%;
   }
+}
+
+/* Styling the slider thumb (circle) */
+input[type="range"]::-webkit-slider-thumb {
+  background-color: rgb(171, 171, 171); /* Change to desired color */
+}
+
+/* Styling the slider track (line) */
+input[type="range"]::-webkit-slider-runnable-track {
+  background-color:rgb(171, 171, 171); /* Change to desired color */
+  width: 80%;
+}
+
+/* Styling the number displayed above the line */
+input[type="range"]::-webkit-slider-thumb::before {
+  content: attr(value); /* Display the value attribute */
+  position: absolute;
+  top: -30px; /* Adjust position as needed */
+  left: 50%;
+  transform: translateX(-50%);
+  color: white; /* Change to desired color */
+  background-color: black; /* Change to desired color */
+  padding: 5px;
+  border-radius: 5px;
 }

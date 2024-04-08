@@ -9,6 +9,7 @@ const { basename } = require('path');
 dotenv.config();
 const app = express();
 const { Mutex } = require('async-mutex');
+const { error } = require('console');
 const server = http.createServer(app);
 const io = require('socket.io')(server, {
   cors: {
@@ -128,7 +129,7 @@ const Chips = {};
 
 const initializePlayerChips = async (gameId, playersIds) => {
     try {
-        let chips = 1000;
+        let chips = 5000;
         let game = await Game.findOne({ gameId });
 
         for (const playerId of playersIds) {
@@ -353,7 +354,8 @@ const gameSchema = new mongoose.Schema({
   whoSb: { type: String, default: '' },
   saveDealer: {type: String, default: ''},
   foldDelay: { type: Number, default: 0 },
-  currentPlayerIndexFoldRef: { type: Number, default: 0 }
+  currentPlayerIndexFoldRef: { type: Number, default: 0 },
+  gameIsLive: { type: Boolean, default: false }
 });
 
   const Game = mongoose.model('Game', gameSchema);
@@ -382,7 +384,7 @@ app.get('/', (req, res) => {
   
         if (!game) {
           // If the game does not exist, create a new one with the current player as the host
-          game = new Game({ gameId, playersIds: [], currentPlayerIndex: 0, pot: 0, isLive: false, tableCards: [], gameTurns: {turnIndex: 0, actionsTaken: 0}, betDifference: 0, playerMoney: [], raiseCount: 0, interBet: 0, betAmount: 0, whoBet:'', whoRaised: '', raiseAmount: 0, raisedHowMany: 0, betresBeforeRaise: 0, whoBetRes: '', betRezzed: 0, minusBet: 0, eventSequence: [], abSy: 0, absy2: 0, whoRaised2: '', aB: 0, aA: 0, dealerIndex: 0, blindStopper: 0, isTurnAdvanced: false, isDealCardsCompleted: false, sB: 0, bB: 0, lT: false, rT: false, reserveRaise: [], combinedBlinds: 0, cashChips: [0,0,0,0,0,0,0,0,0,0], storeBet: 0, folderPlayers: [], updatedPlayersLength: 0, whoSb: '', saveDealer: '', foldDelay: 0, currentPlayerIndexFoldRef: 0 });
+          game = new Game({ gameId, playersIds: [], currentPlayerIndex: 0, pot: 0, isLive: false, tableCards: [], gameTurns: {turnIndex: 0, actionsTaken: 0}, betDifference: 0, playerMoney: [], raiseCount: 0, interBet: 0, betAmount: 0, whoBet:'', whoRaised: '', raiseAmount: 0, raisedHowMany: 0, betresBeforeRaise: 0, whoBetRes: '', betRezzed: 0, minusBet: 0, eventSequence: [], abSy: 0, absy2: 0, whoRaised2: '', aB: 0, aA: 0, dealerIndex: 0, blindStopper: 0, isTurnAdvanced: false, isDealCardsCompleted: false, sB: 0, bB: 0, lT: false, rT: false, reserveRaise: [], combinedBlinds: 0, cashChips: [0,0,0,0,0,0,0,0,0,0], storeBet: 0, folderPlayers: [], updatedPlayersLength: 0, whoSb: '', saveDealer: '', foldDelay: 0, currentPlayerIndexFoldRef: 0, gameIsLive: false });
           await game.save();
           console.log(`Game created with ID: ${gameId} by host: ${playerId}`);
           if (!game.playersIds.includes(playerId)) {
@@ -392,18 +394,81 @@ app.get('/', (req, res) => {
         } else if (!game.playersIds.includes(playerId)) {
           game.playersIds.push(playerId);
           console.log(`Player ${playerId} joined game ${gameId}`);
-        }
+        } 
+        if (!game.gameIsLive){
         await game.save();
         socket.join(gameId);  
         console.log(game.playersIds);
+        
+        const uniquePlayersIds = [...new Set(game.playersIds)];
+        if (uniquePlayersIds.length !== game.playersIds.length) {
+          console.log('Duplicate playerId found, subtracter emitted');
+          io.to(gameId).emit('minusDuplicate', { gameId });
+        }
         // Notify all players in the game about the updated game state
         io.to(gameId).emit('gameUpdated', { gameId, game }); // Ensure clients join the gameId room to receive this
-  
+        }
+      await game.save();
     });
+    socket.on('duplicateSubtract', async ({ gameId, playersIds }) => {
+      let retryCount = 0;
+      const maxRetries = 3;
+      
+      while (retryCount < maxRetries) {
+        try {
+          let game = await Game.findOne({ gameId: gameId });
+    
+          // Check if the document exists
+          if (!game) {
+            throw new Error('Game not found');
+          }
+    
+          // Update the playersIds array to remove duplicates
+          let hasDuplicate = false;
+    
+      for (let i = 0; i < game.playersIds.length; i++) {
+        for (let j = i + 1; j < game.playersIds.length; j++) {
+          if (game.playersIds[i] === game.playersIds[j]) {
+            hasDuplicate = true;
+            // Remove the duplicate player ID
+            game.playersIds.splice(j, 1);
+            j--; // Adjust index after splice
+          }
+        }
+      }
+    
+      if (hasDuplicate) {
+        console.log('Duplicate player id found and removed');
+        console.log(game.playersIds);
+      }
+    
+          // Save the updated document with optimistic concurrency control
+          await game.save({ versionKey: '__v' });
+    
+          // Emit the updated game to clients
+          io.to(gameId).emit('gameUpdated', { gameId, game });
+    
+          // Exit the loop if save is successful
+          break;
+        } catch (error) {
+          if (error.name === 'VersionError' && retryCount < maxRetries) {
+            console.log('Save failed due to version conflict. Retrying...');
+            retryCount++;
+          } else {
+            console.error('Error updating game:', error);
+            // Handle the error as needed
+            break;
+          }
+        }
+      }
+    });
+    
+    
     socket.on('startGame', async ({ gameId,playersIds }) => {
       let game = await Game.findOne({ gameId: gameId });
       game.saveDealer = game.dealerIndex;
       game.playersIds.length = game.playersIds.length;
+      game.gameIsLive = true;
       const currentPlayerId = game.playersIds[game.currentPlayerIndex];
 
       if (game && game.playersIds.length >= 2) {
@@ -438,6 +503,7 @@ app.get('/', (req, res) => {
       await dealCards(gameId, game.playersIds);
       game.isDealCardsCompleted = true;
         await game.save();
+        io.to(gameId).emit('minRaiseEqBB', {minRaiseEqBB: 50});
         
         //blinds
         if (!game.isTurnAdvanced && game.isDealCardsCompleted && game.blindStopper < 1) {
@@ -478,6 +544,7 @@ app.get('/', (req, res) => {
     await dealCards(gameId, game.playersIds);
     game.isDealCardsCompleted = true;
       await game.save();
+      io.to(gameId).emit('minRaiseEqBB', {minRaiseEqBB: 50});
       
       //blinds
       if (!game.isTurnAdvanced && game.isDealCardsCompleted && game.blindStopper < 1) {
@@ -563,6 +630,14 @@ socket.on('playerAction', async ({ gameId, action, playersIds, betAmount, betDif
   let game = await Game.findOne({ gameId });
    const currentPlayerId = game.playersIds[game.currentPlayerIndex];
   if (!game) return;
+  
+  const uniquePlayersIds = [...new Set(game.playersIds)];
+      if (uniquePlayersIds.length !== game.playersIds.length) {
+        console.log('Duplicate playerId found and removed');
+        game.playersIds = uniquePlayersIds;
+      }
+  
+      await game.save();
 
 
   switch (action) {
@@ -658,6 +733,7 @@ socket.on('playerAction', async ({ gameId, action, playersIds, betAmount, betDif
   if (socket.id === playerToSocketMap[currentPlayerId]) {
     console.log(game.raiseCount);
     io.to(gameId).emit('didRaise');
+    io.to(gameId).emit('minRaise', {minRaise:betAmount});
     let betDiff = game.betDifference;
     if(game.raiseCount===0){
       game.whoRaised = currentPlayerId;
@@ -1201,6 +1277,7 @@ socket.on('playerAction', async ({ gameId, action, playersIds, betAmount, betDif
     io.to(gameId).emit('raiseEmitted', { betAmount, pot:game.pot });
   }else if (action === 'bet'){
     io.to(gameId).emit('potUpdated', { betAmount, pot:game.pot });
+    io.to(gameId).emit('minRaise', { minRaise: betAmount });
   }
 
 
@@ -1219,7 +1296,9 @@ socket.on('playerAction', async ({ gameId, action, playersIds, betAmount, betDif
     console.log('yesw1');
   }  
   
-
+  if (game.raiseCount === 2){
+    io.to(gameId).emit('raiseLimitReached');
+  }
 
   if ((game.gameTurns.turnIndex > 0 || game.gameTurns.turnIndex === 0 && game.raiseCount > 0 ) && game.folderPlayers.includes(game.playersIds[(game.currentPlayerIndex+1)%game.playersIds.length])){
     await advanceTurn(gameId);//risky, may need a different approach
@@ -1756,6 +1835,25 @@ socket.on('cashUpdate', async ({ cashUpdate, playerId, gameId }) => {
       console.error("Error:", error);
     }
   });
+  
+  socket.on('betSound', async ({gameId}) => {
+    io.to(gameId).emit('emitBetSound');
+    });
+    socket.on('betResSound', async ({gameId}) => {
+      io.to(gameId).emit('emitBetResSound');
+      });
+      socket.on('checkSound', async ({gameId}) => {
+        io.to(gameId).emit('emitCheckSound');
+        });
+        socket.on('foldSound', async ({gameId}) => {
+          io.to(gameId).emit('emitFoldSound');
+          });
+
+
+  socket.on('newPlayerChips', async ({newPlayerChips, gameId, whoseChips}) => {
+  io.to(gameId).emit('newChipsRightBack', { newChipsRightBack:newPlayerChips, whosMoney:whoseChips });
+  });
+
   });
 
 
