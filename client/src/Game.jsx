@@ -63,6 +63,12 @@ import aceClubs from    "./assets/cards/CLUBS_A.svg";
 
 import cardBack from "./assets/cards/BACK.svg";
 
+import betSound from "./assets/betSound.mp3";
+import checkSound from "./assets/checkSound.mp3";
+import foldSound from "./assets/foldSound.mp3";
+
+
+
 
 const SERVER_URL = 'http://localhost:3001';
 const socket = io(SERVER_URL);
@@ -194,6 +200,7 @@ function Game() {
   const [everyonesChips, setEveryonesChips] = useState([]);
   const [loopNum, setLoopNum] = useState(0);
   const [copied, setCopied] = useState(false);
+  const [combinedCards, setCombinedCards]= useState([]);
 
   const [interBet, setInterBet] = useState(0);
   const [interIndex, setInterIndex] = useState(0);
@@ -952,6 +959,191 @@ if (playerFolded){
   setPlayerMoney(foldedChipsSave);
 };
 
+socket.on('selectWinner', () => {
+  const newCombinedCards = [...playerHand, ...tableCards];
+  setCombinedCards(newCombinedCards);
+  console.log('Combined cards:', newCombinedCards, newCombinedCards.name, combinedCards.name, combinedCards.suit);
+  console.log('Player hand:', playerHand);
+  console.log('Table cards:', tableCards);
+
+  let handScore = 0;
+  let twoCardScore = 0;
+
+  const playerHandCardNames = playerHand.map(card => card.name);
+
+  for (let i = 0; i < namesForStraight.length; i++){
+    if (playerHandCardNames.includes(namesForStraight[i])){
+      twoCardScore = i;
+    }
+  }
+
+  const namesForStraight = ['two','three','four','five','six','seven','eight','nine','ten','jack','queen','king','ace'];
+
+  const tableCardNames = tableCards.map(card => card.name);
+  const tableCardSuits = tableCards.map(card => card.suit);
+
+  const tableCardNameCounts = tableCards.reduce((counts, card) => {
+    counts[card.name] = (counts[card.name] || 0)+1;
+    return counts;
+  }, {});
+  const tableCardSuitCounts = tableCards.reduce((counts, card) => {
+    counts[card.suit] = (counts[card.suit] || 0)+1;
+    return counts;
+  }, {});
+
+  const uniqueTableCardNames = Object.keys(tableCardNameCounts);
+  const uniqueTableCardSuits = Object.keys(tableCardSuitCounts);
+
+  const tablePairCardNames = uniqueTableCardNames.filter(name => tableCardNameCounts[name] === 2);
+  const setTableCardNames = uniqueTableCardNames.filter(name => tableCardNameCounts[name] === 3);
+  const twoPairTableCardNames = tablePairCardNames.filter(name => tableCardNameCounts[name] === 2);
+  const fourTableCardNames = uniqueTableCardNames.filter(name => tableCardNameCounts[name] === 4);
+  const fullHousetableCardNamePairs = tablePairCardNames.filter(name => !setTableCardNames.includes(name));
+
+
+  const flushTableCardSuits = uniqueTableCardSuits.filter(suit => tableCardSuitCounts[suit] === 5);
+// top = table //////////////////////////// bottom = combined /////////////////////////////////////////////////////////////
+  
+  const cardNames = newCombinedCards.map(card => card.name);
+  const cardSuits = newCombinedCards.map(card => card.suit);
+
+  const cardNameCounts = newCombinedCards.reduce((counts, card) => {
+    counts[card.name] = (counts[card.name] || 0)+1;
+    return counts;
+  }, {});
+  const cardSuitCounts = newCombinedCards.reduce((counts, card) => {
+    counts[card.suit] = (counts[card.suit] || 0)+1;
+    return counts;
+  }, {});
+
+    const uniqueCardNames = Object.keys(cardNameCounts);
+
+    const pairCardNames = uniqueCardNames.filter(name => cardNameCounts[name] === 2);
+    const setCardNames = uniqueCardNames.filter(name => cardNameCounts[name] === 3);
+    const twoPairCardNames = pairCardNames.filter(name => cardNameCounts[name] === 2);
+    const fourCardNames = uniqueCardNames.filter(name => cardNameCounts[name] === 4);
+    const fullHouseCardNamePairs = pairCardNames.filter(name => !setCardNames.includes(name));
+
+    const flushCardSuits = uniqueCardNames.filter(suit => cardSuitCounts[suit] === 5);
+    const flushCardSuitsplusone = uniqueCardNames.filter(suit => cardSuitCounts[suit] === 6);
+    const flushCardSuitsplustwo = uniqueCardNames.filter(suit => cardSuitCounts[suit] === 7);
+
+    let flush = false;
+
+    let pair = false;
+    let twopair = false;
+    let set = false;
+    let fourofakind = false;
+    let straightflush = false;
+    let royalflush = false;
+
+
+
+    let straight = false;
+    for (let i = 0; i <= cardNames.length - 5; i++){
+      if (namesForStraight.includes(cardNames[i]) &&
+      namesForStraight.includes(cardNames[i+1])&&
+      namesForStraight.includes(cardNames[i+2])&&
+      namesForStraight.includes(cardNames[i+3])&&
+      namesForStraight.includes(cardNames[i+4])){
+        straight = true;
+        break;
+      }
+    }
+
+const isFullHousePossible = (fullHouseCardNamePairs.length === 1 && setCardNames.length > 0 && fullHousetableCardNamePairs.length === 0) || (fullHouseCardNamePairs.length === 2 && setCardNames.length > 0 && fullHousetableCardNamePairs.length === 1);
+
+if (pairCardNames.length === 1 && tablePairCardNames <1){
+  //pair
+  pair = true;
+  handScore = 300+twoCardScore;
+}
+else if (pairCardNames.length === 2 && tablePairCardNames <2){
+  //pair
+  pair = true;
+  handScore = 300+twoCardScore;
+}
+else if (pairCardNames.length === 3 && tablePairCardNames <3){
+  //pair
+  pair = true;
+  handScore = 300+twoCardScore;
+}
+
+if (twoPairCardNames.length === 2 && twoPairTableCardNames < 2){
+  //two pairs
+  twopair = true;
+  handScore = 325+twoCardScore;
+}
+else if (twoPairCardNames.length === 3 && twoPairTableCardNames < 3){
+  //two pairs
+  twopair = true;
+  handScore = 325+twoCardScore;
+}
+
+if (setCardNames.length === 1 && setTableCardNames < 1){
+  //set
+  set = true;
+  handScore = 350+twoCardScore;
+}
+else if (setCardNames.length === 2 && setTableCardNames < 2){
+  //set
+  set = true;
+  handScore = 350+twoCardScore;
+}
+
+if (straight){
+  //straight
+  handScore = 375+twoCardScore;
+}
+
+if ((flushCardSuits.length === 1 && flushTableCardSuits < 1) || (flushCardSuitsplusone.length === 1 && flushTableCardSuits === 1 || flushCardSuitsplusone.length === 1 && flushTableCardSuits === 0) || (flushCardSuitsplustwo.length === 1 && flushTableCardSuits === 1 || flushCardSuitsplustwo.length === 1 && flushTableCardSuits === 0)){
+  //flush
+  flush = true;
+  handScore = 400+twoCardScore;
+}
+
+if (isFullHousePossible){
+  //full house
+  handScore = 425+twoCardScore;
+}
+if (fourCardNames.length === 1 && fourTableCardNames !== 1){
+  //four of a kind
+  fourofakind = true;
+  handScore = 450+twoCardScore;
+}
+
+if (straight && flush){
+  //straight flush 
+  straightflush = true;
+
+  handScore = 475+twoCardScore;
+}
+
+if (straight && flush && cardNames.includes('ten') && cardNames.includes('jack') &&
+cardNames.includes('queen') && cardNames.includes('king') && cardNames.includes('ace')){
+  //royal flush 
+royalflush = true;
+handScore = 500+twoCardScore;
+}
+
+if (!pair && !twopair && !set && !straight && !flush && !isFullHousePossible && !fourofakind && !straightflush && !royalflush){
+  handScore = 0+twoCardScore;
+}
+
+
+  socket.emit('whoIsWinner', { gameId, handScore, playerIndex: playersInGame.indexOf(playerId) });
+});
+
+socket.on('winnerSelected', ({winnersIndex}) => {
+if (winnersIndex.length === 1 && (playersInGame.indexOf(playerId)) === winnersIndex[0]){
+  setPlayerMoney(playerMoney + pot);
+}else if (winnersIndex.length > 1 && winnersIndex.includes(playersInGame.indexOf(playerId)) ){
+  setPlayerMoney(playerMoney + (pot / winnersIndex.length ));
+}
+
+});
+
+
 socket.on('newHand', () => {
   setRaiseLimitReached(false);
   setPlayerFolded(false);
@@ -1022,16 +1214,16 @@ const playSound = (soundUrl) => {
 };
 
 socket.on('emitFoldSound', () => {
-  
+  playSound(foldSound);
 });
 socket.on('emitCheckSound', () => {
-  
+  playSound(checkSound);
 });
 socket.on('emitBetResSound', () => {
-  
+  playSound(betSound);
 });
 socket.on('emitBetSound', () => {
-  
+  playSound(betSound);
 });
 
       return () => {
@@ -1140,6 +1332,8 @@ socket.on('emitBetSound', () => {
         socket.off('emitBetResSound');
         socket.off('emitCheckSound');
         socket.off('emitFoldSound');
+        socket.off('winnerSelected');
+        socket.off('selectWinner');
       };
     }, [gameId, socket, turnCount, playerId, pot, cards, runIndex, dealer]);
   

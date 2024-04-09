@@ -104,8 +104,7 @@ async function dealCards(gameId, playersIds) {
   gameDecks[gameId] = deck; // Save the updated deck back to the gameDecks
 
   if (game) {
-    // Assuming the dealer is the first player in the list for this example
-    // This logic may change depending on your game's rules
+
     let firstPlayerIndex = 0;
     game.currentPlayerIndex = firstPlayerIndex;
     await game.save();
@@ -274,6 +273,7 @@ function dealTurn(gameId) {
   return turnCards;
 }
 function dealRiver(gameId) {
+  let game = Game.findOne({ gameId });  
   let deck = gameDecks[gameId];
   
   // Deal three cards for the flop
@@ -282,6 +282,7 @@ function dealRiver(gameId) {
   // Save the updated deck back to the gameDecks
   gameDecks[gameId] = deck;
   
+  game.riverCards = riverCards;
   // Return the flop cards to be broadcasted
   return riverCards;
 }
@@ -355,7 +356,9 @@ const gameSchema = new mongoose.Schema({
   saveDealer: {type: String, default: ''},
   foldDelay: { type: Number, default: 0 },
   currentPlayerIndexFoldRef: { type: Number, default: 0 },
-  gameIsLive: { type: Boolean, default: false }
+  gameIsLive: { type: Boolean, default: false },
+  handScore: { type: Number, default: 0 },
+  riverCards: []
 });
 
   const Game = mongoose.model('Game', gameSchema);
@@ -384,7 +387,7 @@ app.get('/', (req, res) => {
   
         if (!game) {
           // If the game does not exist, create a new one with the current player as the host
-          game = new Game({ gameId, playersIds: [], currentPlayerIndex: 0, pot: 0, isLive: false, tableCards: [], gameTurns: {turnIndex: 0, actionsTaken: 0}, betDifference: 0, playerMoney: [], raiseCount: 0, interBet: 0, betAmount: 0, whoBet:'', whoRaised: '', raiseAmount: 0, raisedHowMany: 0, betresBeforeRaise: 0, whoBetRes: '', betRezzed: 0, minusBet: 0, eventSequence: [], abSy: 0, absy2: 0, whoRaised2: '', aB: 0, aA: 0, dealerIndex: 0, blindStopper: 0, isTurnAdvanced: false, isDealCardsCompleted: false, sB: 0, bB: 0, lT: false, rT: false, reserveRaise: [], combinedBlinds: 0, cashChips: [0,0,0,0,0,0,0,0,0,0], storeBet: 0, folderPlayers: [], updatedPlayersLength: 0, whoSb: '', saveDealer: '', foldDelay: 0, currentPlayerIndexFoldRef: 0, gameIsLive: false });
+          game = new Game({ gameId, playersIds: [], currentPlayerIndex: 0, pot: 0, isLive: false, tableCards: [], gameTurns: {turnIndex: 0, actionsTaken: 0}, betDifference: 0, playerMoney: [], raiseCount: 0, interBet: 0, betAmount: 0, whoBet:'', whoRaised: '', raiseAmount: 0, raisedHowMany: 0, betresBeforeRaise: 0, whoBetRes: '', betRezzed: 0, minusBet: 0, eventSequence: [], abSy: 0, absy2: 0, whoRaised2: '', aB: 0, aA: 0, dealerIndex: 0, blindStopper: 0, isTurnAdvanced: false, isDealCardsCompleted: false, sB: 0, bB: 0, lT: false, rT: false, reserveRaise: [], combinedBlinds: 0, cashChips: [0,0,0,0,0,0,0,0,0,0], storeBet: 0, folderPlayers: [], updatedPlayersLength: 0, whoSb: '', saveDealer: '', foldDelay: 0, currentPlayerIndexFoldRef: 0, gameIsLive: false, handScore: 0, riverCards: [] });
           await game.save();
           console.log(`Game created with ID: ${gameId} by host: ${playerId}`);
           if (!game.playersIds.includes(playerId)) {
@@ -1613,6 +1616,7 @@ console.log(`you know ${game.playersIds[(game.currentPlayerIndex+1)%game.players
         game.whoSb = '';
         console.log(`${currentPlayerId} ${game.playersIds[game.dealerIndex+1]}`);
     } else if (game.gameTurns.turnIndex === 4){  
+      io.to(gameId).emit('selectWinner');
       game.updatedPlayersLength = game.playersIds.length;   
       game.betDifference = 0;
       game.gameTurns.turnIndex = 0;
@@ -1782,6 +1786,41 @@ socket.on('cashUpdate', async ({ cashUpdate, playerId, gameId }) => {
         console.error('Error in cashUpdate socket listener:', error);
     }
 });
+
+let scoreCount = 0;
+let scoresWithIndices = [];
+
+
+socket.on('whoIsWinner', async ({gameId, handScore, playerIndex}) => {
+  let game = await Game.findOne({ gameId });
+  scoresWithIndices.push({playerIndex, handScore});
+  scoreCount++;
+
+  if (scoreCount === game.playersIds.length){
+  let highestScore = -1;
+  let winnersIndices = [];
+
+  scoresWithIndices.forEach(({playerIndex, handScore}) => {
+    if (handScore > highestScore){
+      highestScore = handScore;
+      winnersIndices = [playerIndex];
+    }
+    else if (handScore === highestScore){
+      winnersIndices.push(playerIndex);
+    }
+  });
+
+
+  if (winnersIndices.length === 1){
+    io.to(gameId).emit('winnerSelected', {winnersIndex: winnersIndices[0]});
+  }
+  else {
+    io.to(gameId).emit('winnerSelected', {winnersIndex: winnersIndices});
+  }
+  }
+  
+});
+
   socket.on('requestCashUpdate', async ({gameId}) => {
     let game = await Game.findOne({ gameId });
     io.to(gameId).emit('gimmeCashUpdate');
@@ -1848,6 +1887,14 @@ socket.on('cashUpdate', async ({ cashUpdate, playerId, gameId }) => {
         socket.on('foldSound', async ({gameId}) => {
           io.to(gameId).emit('emitFoldSound');
           });
+
+
+
+socket.on('whoIsWinner', async ({gameId, playerHand, playerIndex}) => {
+  let game = await Game.findOne({ gameId });
+  console.log(`playerHand: ${playerHand}`);
+  console.log(`table cards: ${game.riverCards}`);
+  });
 
 
   socket.on('newPlayerChips', async ({newPlayerChips, gameId, whoseChips}) => {

@@ -13,7 +13,7 @@ justify-content: center;
 body{
   font-family: "Rubik", sans-serif;
 }
-p{
+p, h1, h2{
   font-family: "Rubik", sans-serif;
 }
 .join-anchor{
