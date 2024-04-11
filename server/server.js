@@ -13,7 +13,7 @@ const { error } = require('console');
 const server = http.createServer(app);
 const io = require('socket.io')(server, {
   cors: {
-    origin: "http://localhost:3000", // Allow only the client origin to connect
+    origin: "https://pwfpwfpwf-3f02d2a899b2.herokuapp.com/", // Allow only the client origin to connect
   }
 });
 app.use(cors());

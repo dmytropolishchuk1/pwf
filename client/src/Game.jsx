@@ -70,7 +70,7 @@ import foldSound from "./assets/foldSound.mp3";
 
 
 
-const SERVER_URL = 'http://localhost:3001';
+const SERVER_URL = ''; 
 const socket = io(SERVER_URL);
 
 function Game() {

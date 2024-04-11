@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import io from 'socket.io-client';
 import { v4 as uuidv4 } from 'uuid';
 
-const SERVER_URL = 'http://localhost:3001';
+const SERVER_URL = ''; 
 const socket = io(SERVER_URL);
 
 const Landing = () => {
