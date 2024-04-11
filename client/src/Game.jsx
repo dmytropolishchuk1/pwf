@@ -201,6 +201,12 @@ function Game() {
   const [loopNum, setLoopNum] = useState(0);
   const [copied, setCopied] = useState(false);
   const [combinedCards, setCombinedCards]= useState([]);
+  const [victorious, setVictorious] = useState([]);
+  const [myHandQuant, setMyHandQuant] = useState(0);
+  const [showOtherCards, setShowOtherCards] = useState(false);
+  const [storePot, setStorePot] = useState(0);
+  const [everyonesHand, setEveryonesHand] = useState ([]);
+  const [everyonesIndex, setEveryonesIndex] = useState ([]);
 
   const [interBet, setInterBet] = useState(0);
   const [interIndex, setInterIndex] = useState(0);
@@ -238,6 +244,7 @@ function Game() {
     const handleGameUpdated = ({ game }) => {
       setGameState(game);
       setPlayersInGame(game.playersIds);
+      console.log(`players in game are: ${playersInGame}`)
     };
 
 
@@ -250,6 +257,7 @@ function Game() {
       setPlayerHand(dealtCards);
       console.log(dealtCards);
       });
+
     socket.on('chipsDealt', (playerChips) => {
       setPlayerMoney(playerChips);
       const newEveryonesChips = Array(playersInGame.length).fill(5000);
@@ -455,6 +463,7 @@ function Game() {
         }
           setStopB1(stopB1+1);
           setIsSmallBlind(false);
+          playSound(betSound);
         }
         
         console.log('Update turn event received');
@@ -960,7 +969,9 @@ if (playerFolded){
 };
 
 socket.on('selectWinner', () => {
+  setStorePot(pot);
   const newCombinedCards = [...playerHand, ...tableCards];
+  const namesForStraight = ['two','three','four','five','six','seven','eight','nine','ten','jack','queen','king','ace'];
   setCombinedCards(newCombinedCards);
   console.log('Combined cards:', newCombinedCards, newCombinedCards.name, combinedCards.name, combinedCards.suit);
   console.log('Player hand:', playerHand);
@@ -977,7 +988,6 @@ socket.on('selectWinner', () => {
     }
   }
 
-  const namesForStraight = ['two','three','four','five','six','seven','eight','nine','ten','jack','queen','king','ace'];
 
   const tableCardNames = tableCards.map(card => card.name);
   const tableCardSuits = tableCards.map(card => card.suit);
@@ -994,16 +1004,18 @@ socket.on('selectWinner', () => {
   const uniqueTableCardNames = Object.keys(tableCardNameCounts);
   const uniqueTableCardSuits = Object.keys(tableCardSuitCounts);
 
-  const tablePairCardNames = uniqueTableCardNames.filter(name => tableCardNameCounts[name] === 2);
-  const setTableCardNames = uniqueTableCardNames.filter(name => tableCardNameCounts[name] === 3);
+  const tablePairCardNames = Object.keys(tableCardNameCounts).filter(name => tableCardNameCounts[name] === 2);
+  const setTableCardNames = Object.keys(tableCardNameCounts).filter(name => tableCardNameCounts[name] === 3);
   const twoPairTableCardNames = tablePairCardNames.filter(name => tableCardNameCounts[name] === 2);
-  const fourTableCardNames = uniqueTableCardNames.filter(name => tableCardNameCounts[name] === 4);
+  const fourTableCardNames = Object.keys(tableCardNameCounts).filter(name => tableCardNameCounts[name] === 4);
   const fullHousetableCardNamePairs = tablePairCardNames.filter(name => !setTableCardNames.includes(name));
 
 
-  const flushTableCardSuits = uniqueTableCardSuits.filter(suit => tableCardSuitCounts[suit] === 5);
+  const flushTableCardSuits = Object.keys(tableCardSuitCounts).filter(suit => tableCardSuitCounts[suit] === 5);
 // top = table //////////////////////////// bottom = combined /////////////////////////////////////////////////////////////
   
+
+
   const cardNames = newCombinedCards.map(card => card.name);
   const cardSuits = newCombinedCards.map(card => card.suit);
 
@@ -1018,15 +1030,19 @@ socket.on('selectWinner', () => {
 
     const uniqueCardNames = Object.keys(cardNameCounts);
 
-    const pairCardNames = uniqueCardNames.filter(name => cardNameCounts[name] === 2);
-    const setCardNames = uniqueCardNames.filter(name => cardNameCounts[name] === 3);
+    const pairCardNames = Object.keys(cardNameCounts).filter(name => cardNameCounts[name] === 2);
+    const setCardNames = Object.keys(cardNameCounts).filter(name => cardNameCounts[name] === 3);
     const twoPairCardNames = pairCardNames.filter(name => cardNameCounts[name] === 2);
-    const fourCardNames = uniqueCardNames.filter(name => cardNameCounts[name] === 4);
+    const fourCardNames = Object.keys(cardNameCounts).filter(name => cardNameCounts[name] === 4);
     const fullHouseCardNamePairs = pairCardNames.filter(name => !setCardNames.includes(name));
 
-    const flushCardSuits = uniqueCardNames.filter(suit => cardSuitCounts[suit] === 5);
-    const flushCardSuitsplusone = uniqueCardNames.filter(suit => cardSuitCounts[suit] === 6);
-    const flushCardSuitsplustwo = uniqueCardNames.filter(suit => cardSuitCounts[suit] === 7);
+    const flushCardSuits = Object.keys(cardSuitCounts).filter(suit => cardSuitCounts[suit] === 5);
+    const flushCardSuitsplusone = Object.keys(cardSuitCounts).filter(suit => cardSuitCounts[suit] === 6);
+    const flushCardSuitsplustwo = Object.keys(cardSuitCounts).filter(suit => cardSuitCounts[suit] === 7);
+
+
+    const pairCardName = playerHand.map(card => card.name).find(name => pairCardNames.includes(name));
+    const pairIndex = namesForStraight.indexOf(pairCardName);
 
     let flush = false;
 
@@ -1040,41 +1056,29 @@ socket.on('selectWinner', () => {
 
 
     let straight = false;
-    for (let i = 0; i <= cardNames.length - 5; i++){
-      if (namesForStraight.includes(cardNames[i]) &&
-      namesForStraight.includes(cardNames[i+1])&&
-      namesForStraight.includes(cardNames[i+2])&&
-      namesForStraight.includes(cardNames[i+3])&&
-      namesForStraight.includes(cardNames[i+4])){
+    const sortedNamesForStraight = namesForStraight.slice().sort();
+    
+    for (let i = 0; i <= cardNames.length - 5; i++) {
+      const subList = cardNames.slice(i, i + 5);
+    
+      const sortedSubList = subList.slice().sort();
+    
+      const isStraight = sortedSubList.every((name, index) => name === sortedNamesForStraight[index]);
+    
+      if (isStraight) {
         straight = true;
         break;
       }
     }
-
 const isFullHousePossible = (fullHouseCardNamePairs.length === 1 && setCardNames.length > 0 && fullHousetableCardNamePairs.length === 0) || (fullHouseCardNamePairs.length === 2 && setCardNames.length > 0 && fullHousetableCardNamePairs.length === 1);
 
-if (pairCardNames.length === 1 && tablePairCardNames <1){
+if (pairCardNames.length === 1 ){
   //pair
   pair = true;
-  handScore = 300+twoCardScore;
-}
-else if (pairCardNames.length === 2 && tablePairCardNames <2){
-  //pair
-  pair = true;
-  handScore = 300+twoCardScore;
-}
-else if (pairCardNames.length === 3 && tablePairCardNames <3){
-  //pair
-  pair = true;
-  handScore = 300+twoCardScore;
+  handScore = 300+pairIndex;
 }
 
-if (twoPairCardNames.length === 2 && twoPairTableCardNames < 2){
-  //two pairs
-  twopair = true;
-  handScore = 325+twoCardScore;
-}
-else if (twoPairCardNames.length === 3 && twoPairTableCardNames < 3){
+if (twoPairCardNames.length === 2){
   //two pairs
   twopair = true;
   handScore = 325+twoCardScore;
@@ -1130,21 +1134,60 @@ if (!pair && !twopair && !set && !straight && !flush && !isFullHousePossible && 
   handScore = 0+twoCardScore;
 }
 
+  console.log(`handscore : ${handScore}`);
+  setMyHandQuant(handScore);
+  console.log(`myhandquant inside handscore DecompressionStreammining func ${myHandQuant}`);
+  socket.emit('sendHandScore', { gameId, handScore });
+  
+ 
+});
+socket.on('determineWinner', ({highestHandScore, numPlayersWithHighestScore}) => {
 
-  socket.emit('whoIsWinner', { gameId, handScore, playerIndex: playersInGame.indexOf(playerId) });
+
+  let allHands = Array(playersInGame.length).fill([]);
+  setEveryonesHand(allHands);
+  
+  socket.emit('winnerIntermed', {gameId, highestHandScore, numPlayersWithHighestScore, playerHand, playerId}); 
 });
 
-socket.on('winnerSelected', ({winnersIndex}) => {
-if (winnersIndex.length === 1 && (playersInGame.indexOf(playerId)) === winnersIndex[0]){
-  setPlayerMoney(playerMoney + pot);
-}else if (winnersIndex.length > 1 && winnersIndex.includes(playersInGame.indexOf(playerId)) ){
-  setPlayerMoney(playerMoney + (pot / winnersIndex.length ));
-}
+
+socket.on('winningHandScore', ({highestHandScore, numPlayersWithHighestScore, playerHand, playerI}) => {
+
+  console.log("Before updating everyonesHand");
+  console.log(`playersInGame: ${playersInGame}`);
+  console.log(`playerId: ${playerId}`);
+  console.log(`playerI: ${playerI}`);
+  console.log(`everyonesHand before update: ${everyonesHand}`);
+
+  let updatedEveryonesHand = [...everyonesHand];
+const playerIndex = playersInGame.indexOf(playerI);
+updatedEveryonesHand[playerIndex] = playerHand;
+setEveryonesHand(updatedEveryonesHand);
+
+console.log(`upd evrns hnd ${updatedEveryonesHand}`);
+console.log(`everyonesHand before update: ${everyonesHand}`);
+
+
+  setShowOtherCards(true);
+
+  console.log(`pm before applying winnings: ${playerMoney}`);
+  console.log(`myHandQuant: ${myHandQuant}`);
+  console.log(`highestHandScore: ${highestHandScore}`);
+  console.log(`numPlayersWithHighestScore: ${numPlayersWithHighestScore}`);
+  if (!playerFolded && myHandQuant === Number(highestHandScore) && Number(numPlayersWithHighestScore) === 1){
+    setPlayerMoney(playerMoney + (storePot/Number(numPlayersWithHighestScore)));
+    console.log(`pm after applying winnings: ${playerMoney}`);
+  }
+  if (!playerFolded && myHandQuant === Number(highestHandScore) && Number(numPlayersWithHighestScore) === 2 && playersInGame.length === 2){
+    setPlayerMoney(playerMoney + (storePot/2));
+  }
+  console.log(highestHandScore);
+  console.log(`storepot: ${storePot}`);
 
 });
-
 
 socket.on('newHand', () => {
+  socket.emit('gameSequence2', { gameId });
   setRaiseLimitReached(false);
   setPlayerFolded(false);
   setInput2Interacted(false);
@@ -1190,7 +1233,6 @@ socket.on('newHand', () => {
   setTurnCount(0);
   setTurnCount2(0);
   setTurnCount3(0);
-  socket.emit('gameSequence2', { gameId });
 });
 
 window.addEventListener('beforeunload', function(event) {
@@ -1225,6 +1267,12 @@ socket.on('emitBetResSound', () => {
 socket.on('emitBetSound', () => {
   playSound(betSound);
 });
+socket.on('payTheNonFolder', () => {
+  if (!playerFolded){
+    setPlayerMoney(playerMoney+pot);
+  }
+});
+
 
       return () => {
         socket.off('gameUpdated', handleGameUpdated);
@@ -1334,8 +1382,12 @@ socket.on('emitBetSound', () => {
         socket.off('emitFoldSound');
         socket.off('winnerSelected');
         socket.off('selectWinner');
+        socket.off('payTheNonFolder');
+        socket.off('winningHandScore');
+        socket.off('gameCardsDealt');
+        socket.off('determineWinner');
       };
-    }, [gameId, socket, turnCount, playerId, pot, cards, runIndex, dealer]);
+    }, [gameId, socket, turnCount, playerId, pot, cards, runIndex, dealer, myHandQuant, storePot, everyonesHand]);
   
 
     const handlePlayerAction = (actionType, betAmount, event, clientBetAmount) => {
@@ -1496,10 +1548,24 @@ const copyToClipboard = () => {
           {!playerFolded && playerHand.map((card, index) => (
             <img key={index} className='cards' src={cardImages[`${card.name}_${card.suit}`]} alt={`${card.name} of ${card.suit}`} />  
           ))}
+         {/* {showOtherCards && ( everyonesHand.map((hand, playerIndex) => (
+  // Render cards for each player
+        <div key={playerIndex} className={`ncp-${playerIndex}`}>
+  
+          {hand.map((card, index) => (
+            <img
+              key={index}
+              className='cards'
+              src={cardImages[`${card.name}_${card.suit}`]}
+              alt={`${card.name} of ${card.suit}`}
+            />
+          ))}
+        </div>
+      )))}*/}
         </div>
         {/* mapping card backs for non-current players */}
         <div className="ncp-container">
-          {playersInGame.map((_, index) => (
+          {( playersInGame.map((_, index) => (
             index !== playersInGame.indexOf(playerId) && (
               <div className={`ncp-${index}`}>
               <img
@@ -1516,8 +1582,9 @@ const copyToClipboard = () => {
               ></img>
               </div>
             )
-          ))}
+          )))}
         </div>
+        
 
         {isTurn &&(
         <div className="action-choices">

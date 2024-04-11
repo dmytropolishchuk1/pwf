@@ -98,6 +98,7 @@ async function dealCards(gameId, playersIds) {
       const dealtCards = deck.splice(0, 2); // Take the first two cards from the deck
       console.log(`Dealing cards to socket ${socketId}:`, dealtCards);
       io.to(socketId).emit('cardsDealt', dealtCards);
+      io.to(gameId).emit('gameCardsDealt', { playerId, cards: dealtCards });
     }
   });
 
@@ -358,7 +359,12 @@ const gameSchema = new mongoose.Schema({
   currentPlayerIndexFoldRef: { type: Number, default: 0 },
   gameIsLive: { type: Boolean, default: false },
   handScore: { type: Number, default: 0 },
-  riverCards: []
+  riverCards: [],
+  scoresOfHands: [],
+  hands: {
+    type: [{String}],
+    default: [] // Initialize as an empty array
+  }
 });
 
   const Game = mongoose.model('Game', gameSchema);
@@ -387,7 +393,7 @@ app.get('/', (req, res) => {
   
         if (!game) {
           // If the game does not exist, create a new one with the current player as the host
-          game = new Game({ gameId, playersIds: [], currentPlayerIndex: 0, pot: 0, isLive: false, tableCards: [], gameTurns: {turnIndex: 0, actionsTaken: 0}, betDifference: 0, playerMoney: [], raiseCount: 0, interBet: 0, betAmount: 0, whoBet:'', whoRaised: '', raiseAmount: 0, raisedHowMany: 0, betresBeforeRaise: 0, whoBetRes: '', betRezzed: 0, minusBet: 0, eventSequence: [], abSy: 0, absy2: 0, whoRaised2: '', aB: 0, aA: 0, dealerIndex: 0, blindStopper: 0, isTurnAdvanced: false, isDealCardsCompleted: false, sB: 0, bB: 0, lT: false, rT: false, reserveRaise: [], combinedBlinds: 0, cashChips: [0,0,0,0,0,0,0,0,0,0], storeBet: 0, folderPlayers: [], updatedPlayersLength: 0, whoSb: '', saveDealer: '', foldDelay: 0, currentPlayerIndexFoldRef: 0, gameIsLive: false, handScore: 0, riverCards: [] });
+          game = new Game({ gameId, playersIds: [], currentPlayerIndex: 0, pot: 0, isLive: false, tableCards: [], gameTurns: {turnIndex: 0, actionsTaken: 0}, betDifference: 0, playerMoney: [], raiseCount: 0, interBet: 0, betAmount: 0, whoBet:'', whoRaised: '', raiseAmount: 0, raisedHowMany: 0, betresBeforeRaise: 0, whoBetRes: '', betRezzed: 0, minusBet: 0, eventSequence: [], abSy: 0, absy2: 0, whoRaised2: '', aB: 0, aA: 0, dealerIndex: 0, blindStopper: 0, isTurnAdvanced: false, isDealCardsCompleted: false, sB: 0, bB: 0, lT: false, rT: false, reserveRaise: [], combinedBlinds: 0, cashChips: [0,0,0,0,0,0,0,0,0,0], storeBet: 0, folderPlayers: [], updatedPlayersLength: 0, whoSb: '', saveDealer: '', foldDelay: 0, currentPlayerIndexFoldRef: 0, gameIsLive: false, handScore: 0, riverCards: [], scoresOfHands: [], hands: [] });
           await game.save();
           console.log(`Game created with ID: ${gameId} by host: ${playerId}`);
           if (!game.playersIds.includes(playerId)) {
@@ -542,6 +548,7 @@ app.get('/', (req, res) => {
   async function gameSequence2({ gameId,playersIds }) {
     try {
     let game = await Game.findOne({ gameId: gameId });
+    game.currentPlayerIndex = game.dealerIndex+1;
     const currentPlayerId = game.playersIds[game.currentPlayerIndex];
     gameDecks[gameId] = shuffleDeck(stack);
     await dealCards(gameId, game.playersIds);
@@ -631,6 +638,7 @@ socket.on('gameSequence2', async ({ gameId }) => {
     
 socket.on('playerAction', async ({ gameId, action, playersIds, betAmount, betDiff, pot }) => {
   let game = await Game.findOne({ gameId });
+  game.currentPlayerIndex = game.currentPlayerIndex;
    const currentPlayerId = game.playersIds[game.currentPlayerIndex];
   if (!game) return;
   
@@ -1318,6 +1326,9 @@ console.log(`you know ${game.playersIds[(game.currentPlayerIndex+1)%game.players
 
   console.log(`yes22. actions taken: ${game.gameTurns.actionsTaken} and curindfold: ${game.currentPlayerIndexFoldRef}`);
 
+  if (game.folderPlayers.length === (game.playersIds.length-1)){
+    io.to(gameId).emit('payTheNonFolder');
+  }
 
 
     if (game.gameTurns.turnIndex === 0 && game.playersIds.length > 2 && game.raiseCount === 0 && currentPlayerId === game.playersIds[(game.dealerIndex+1)] && game.folderPlayers.includes(currentPlayerId)){
@@ -1432,6 +1443,7 @@ console.log(`you know ${game.playersIds[(game.currentPlayerIndex+1)%game.players
         game.eventSequence = [];
         game.storeBet = 0;
         game.whoSb = '';
+        game.hands = [];
         console.log(`${currentPlayerId} ${game.playersIds[game.dealerIndex+1]}`);
     } else if (game.gameTurns.turnIndex === 2) {
         io.to(gameId).emit('goTurn');
@@ -1615,8 +1627,11 @@ console.log(`you know ${game.playersIds[(game.currentPlayerIndex+1)%game.players
         game.storeBet = 0;
         game.whoSb = '';
         console.log(`${currentPlayerId} ${game.playersIds[game.dealerIndex+1]}`);
-    } else if (game.gameTurns.turnIndex === 4){  
+        }
+      else if (game.gameTurns.turnIndex === 4){
       io.to(gameId).emit('selectWinner');
+      
+      game.scoresOfHands = [];
       game.updatedPlayersLength = game.playersIds.length;   
       game.betDifference = 0;
       game.gameTurns.turnIndex = 0;
@@ -1650,6 +1665,7 @@ console.log(`you know ${game.playersIds[(game.currentPlayerIndex+1)%game.players
       game.folderPlayers = [];
       game.whoSb = '';
       game.dealerIndex = (game.dealerIndex + 1) % game.playersIds.length;
+      game.currentPlayerIndex = (game.dealerIndex+1);
       game.playersIds.length = game.playersIds.length;
       await game.save();
       const isDealer = game.dealerIndex;
@@ -1787,38 +1803,33 @@ socket.on('cashUpdate', async ({ cashUpdate, playerId, gameId }) => {
     }
 });
 
-let scoreCount = 0;
-let scoresWithIndices = [];
 
 
-socket.on('whoIsWinner', async ({gameId, handScore, playerIndex}) => {
-  let game = await Game.findOne({ gameId });
-  scoresWithIndices.push({playerIndex, handScore});
-  scoreCount++;
-
-  if (scoreCount === game.playersIds.length){
-  let highestScore = -1;
-  let winnersIndices = [];
-
-  scoresWithIndices.forEach(({playerIndex, handScore}) => {
-    if (handScore > highestScore){
-      highestScore = handScore;
-      winnersIndices = [playerIndex];
-    }
-    else if (handScore === highestScore){
-      winnersIndices.push(playerIndex);
-    }
-  });
-
-
-  if (winnersIndices.length === 1){
-    io.to(gameId).emit('winnerSelected', {winnersIndex: winnersIndices[0]});
-  }
-  else {
-    io.to(gameId).emit('winnerSelected', {winnersIndex: winnersIndices});
-  }
-  }
+socket.on('sendHandScore', async ({ handScore, gameId }) => {
+  let game = await Game.findOne({ gameId: gameId });
+  game.scoresOfHands.push(handScore);
+  await game.save();
   
+    const highestHandScore = Math.max(...game.scoresOfHands);
+    const numPlayersWithHighestScore = game.scoresOfHands.filter(score => score === highestHandScore).length;
+    io.to(gameId).emit('determineWinner', { highestHandScore, numPlayersWithHighestScore });
+    console.log(`${handScore} : handScore highest handScore ${highestHandScore}`);
+
+
+  console.log(`${handScore} : handScore gpidlenght ${game.playersIds.length} `);
+});
+
+socket.on('winnerIntermed', async ({ highestHandScore, gameId, playerHand, playerId }) => {
+  let game = await Game.findOne({ gameId:gameId });
+
+
+  
+    if ( highestHandScore === Math.max(...game.scoresOfHands)){
+      const numPlayersWithHighestScore = game.scoresOfHands.filter(score => score === highestHandScore).length;
+      io.to(gameId).emit('winningHandScore', { highestHandScore, numPlayersWithHighestScore, playerHand, playerI: playerId });
+      console.log(` handScore highest handScore ${highestHandScore}`);
+    }
+  console.log(` : handScore gpidlenght ${game.playersIds.length} highest handScore ${highestHandScore} game hands: ${game.hands}`);
 });
 
   socket.on('requestCashUpdate', async ({gameId}) => {
@@ -1889,12 +1900,6 @@ socket.on('whoIsWinner', async ({gameId, handScore, playerIndex}) => {
           });
 
 
-
-socket.on('whoIsWinner', async ({gameId, playerHand, playerIndex}) => {
-  let game = await Game.findOne({ gameId });
-  console.log(`playerHand: ${playerHand}`);
-  console.log(`table cards: ${game.riverCards}`);
-  });
 
 
   socket.on('newPlayerChips', async ({newPlayerChips, gameId, whoseChips}) => {

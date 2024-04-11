@@ -42,9 +42,9 @@ p, h1, h2{
   color: white;
 }
 .invite-link{
-  background-color: black;
-  color: aliceblue;
-  border: solid aliceblue 1px;
+  background-color: none;
+  color: black;
+  border: solid black 2px;
   width: 25%;
   height: 10%;
 }
@@ -370,8 +370,245 @@ button.fold{
 
 @media (orientation: portrait) {
   .poker-table {
-    width: 80%;
-    height: 80%;
+    left: calc(15% - 20px);
+    right: calc(15% - 20px);
+    top: calc(10% - 20px);
+    border-radius: 30%;
+    width: 70%;
+    height: 70%;
+  }
+  .poker-table .tablecloth{
+    width: 70%;
+    height: 70%;
+    left: calc(15% - 20px);
+    right: calc(15% - 20px);
+  }
+  .start-game-button{
+    display: flex;
+    position: fixed;
+    flex-direction: column;
+    height: 10%;
+    width: 75%;
+    top: 89%;
+    left: 12.5%;
+    text-align: center;
+    justify-content: center;
+    background-color: rgb(141, 33, 33, 0.7);
+    border: solid black 5px;
+    border-radius: 3%;
+  }
+  .player-ready{
+    display: flex;
+    position: fixed;
+    flex-direction: column;
+    height: 10%;
+    width: 75%;
+    top: 89%;
+    left: 12.5%;
+    text-align: left;
+    justify-content: center;
+    background-color: rgb(141, 33, 33, 0.7);
+    border: solid black 5px;
+    border-radius: 3%;
+  }
+  .start-game-button h1{
+    display: flex;
+    height: auto;
+    width: 100%;
+    justify-content: center;
+    text-align: center;
+  }
+  .player-ready h1{
+    display: flex;
+    height: auto;
+    width: 100%;
+    justify-content: center;
+    text-align: left;
+  }
+  .hand{
+    display: flex;
+    height: 60px;
+    width: 120px;
+  }
+  .howmany-ready{
+    display: flex;
+    text-align: right;
+    align-content: end;
+    font-style: italic;
+    font-weight: 400;
+  }
+  .invite-link{
+    background-color: none;
+    color: black;
+    border: solid black 2px;
+    width: 100%;
+    height: 10%;
+  }
+  .invite-link h1{
+    width: 100%;
+    text-align: center;
+  }
+
+  .hand-0 {
+    position: fixed;
+    display: flex;
+    left: 10%;
+    top: 57.5% ;
+    margin-bottom: 2%;
+  }
+  .ncp-container{
+    display: flex;
+    height: 60px;
+    width: 120px;
+  }
+  img.ncp{
+    height: 60px;
+    width: auto;
+  }
+  .ncp-0{
+    position: fixed;
+    display: flex;
+    left: 10%;
+    top: 57.5% ;
+    margin-bottom: 2%;
+  }
+  .player-0 {
+    position: fixed;
+    display: flex;
+    left: 10%;
+    top: calc(50% - 80px);
+    height: 60px !important;
+    width: 35px !important;
+  }
+  .hand-1 {
+    position: fixed;
+    display: flex;
+    left:  calc(10% + 140px);
+    top: calc( 10% + 10px);
+    margin-left: 2%;
+  }
+  .ncp-1 {
+    position: fixed;
+    display: flex;
+    left:  calc(10% + 140px);
+    top: calc( 10% + 10px);
+    margin-left: 2%;
+  }
+  .player-1 {
+      position: fixed;
+      display: flex;
+      left: calc(5% + 70px);
+      top: calc(10%);
+      height: 60px !important;
+      width: 35px !important;
+  }
+  .ncp-2{
+    position: fixed;
+    display: flex;
+    right: 10%;
+    top: 57.5% ;
+    margin-bottom: 2%;
+  }
+  .player-2 {
+    position: fixed;
+    display: flex;
+    right: 10%;
+    top: calc(50% - 80px);
+    height: 60px !important;
+    width: 35px !important;
+  }
+  .hand-2 {
+    position: fixed;
+    display: flex;
+    justify-content: end;
+    right: 10%;
+    top: 57.5%;
+    margin-bottom: 2%;
+  }
+  .hand-3 {
+    position: fixed;
+    display: flex;
+    left:  calc(40% + 140px);
+    bottom: calc( 10% + 10px);
+    margin-left: 2%;
+  }
+  .ncp-3 {
+    position: fixed;
+    display: flex;
+    left:  calc(40% + 140px);
+    bottom: calc( 10% + 10px);
+    margin-left: 2%;
+  }
+  .player-3 {
+      position: fixed;
+      display: flex;
+      left: calc(40% + 70px);
+      bottom: calc(10%);
+      height: 60px !important;
+      width: 35px !important;
+  }
+  .pot{
+    position: fixed;
+    justify-content: center;
+    text-align: center;
+    top: calc(37.5% - 75px);
+    left:45%;
+    height: 10%;
+    width: 10%;
+  }
+  .flop{
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+    position: fixed;
+    top: calc(50% - 35px);
+    left: calc(50% - 150px);
+    height: 60px;
+    width: 300px;
+  }
+
+  .action-choices{
+    position: fixed;
+    display: flex;
+    flex-direction: row;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 10%;
+    border: solid rgb(255, 255, 255) 2px;
+    background-color: whitesmoke;
+    border-radius: 0%;
+  }
+
+  .check{
+    top: 90%;
+    left: 0;
+    height: 10%;
+    width: 20%;
+  }
+  .bet{
+    top: 90%;
+    left: 60%;
+    height: 10%;
+    width: 20%;
+  }
+  .fold{
+    top: 90%;
+    left: 80%;
+    height: 10%;
+    width: 20%;
+  }
+  .draggable{
+    top: 90%;
+    left: 20%;
+    height: 10%;
+    width: 40%;
+  }
+  .number-dragging{
+    top: 87.5%;
+    left: 20%;
+    height: 5%;
+    width: 40%;
   }
 }
 
