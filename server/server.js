@@ -6,7 +6,6 @@ const cors = require ('cors');
 const dotenv = require ('dotenv');
 const { v4: uuidv4 } = require('uuid');
 const path = require('path');
-const { basename } = path;
 dotenv.config();
 const app = express();
 const { Mutex } = require('async-mutex');
@@ -21,14 +20,12 @@ app.use(cors());
 app.use(express.json());
 
 
-// Serve static files from the 'client/build' directory
-app.use(express.static(path.join(__dirname, 'client/build')));
+app.use(express.static(path.join(__dirname, '../client/build')));
 
-// Route all other requests to the React app's index.html
-app.get('/', (req, res) => {
-  res.sendFile(path.join(__dirname, 'client/build', basename(req.url)));
+// Route all requests to the React app's index.html
+app.get('*', (req, res) => {
+  res.sendFile(path.join(__dirname, '../client/build', 'index.html'));
 });
-
   server.listen(process.env.PORT || 3000, () => {
     console.log(`listening on port ${process.env.PORT || 3000}`);
   });
