@@ -357,11 +357,11 @@ const gameSchema = new mongoose.Schema({
         res.status(500).send('Error fetching games');
     }
 });
-
+/*
 app.get('/', (req, res) => {
     res.send('<h1>Hello world</h1>');
   });
-
+*/
   io.on('connection', (socket) => {
     socket.on('joinGame', async ({ gameId, playerName, playerId }) => {
       playerToSocketMap[playerId] = socket.id;
