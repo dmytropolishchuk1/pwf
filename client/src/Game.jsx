@@ -263,12 +263,9 @@ function Game() {
         setBetResBoolean(false);
         setClientBetAmount(0);
         setClientRaiseAmount(0);
-        setSaveBet(0);
-        setPotDifference(0);
         setMultiRaise(false);
         setInputInteracted(false);
         setNoLimitIndex(0);
-        setMidBet(0);
         setInterBet(0);
         setPlusBool(false);
         setInterRaise(0);
@@ -277,12 +274,8 @@ function Game() {
         setSecondRaise(false);
         setAbstractRaise(0);
         setMinusBetBoolean(false);
-        setMinusBet(0);
         setBrSecRaise(0);
         setLastBetRezz(false);
-        setStopIndex(0);
-        setSecBr(0);
-        setUpR(0);
       });
     socket.on('turnDealt', (turnCards) => {
       if(runIndex2 <= 1){
@@ -302,12 +295,9 @@ function Game() {
       setBetResBoolean(false);
       setClientBetAmount(0);
       setClientRaiseAmount(0);
-      setSaveBet(0);
-      setPotDifference(0);
       setMultiRaise(false);
       setInputInteracted(false);
       setNoLimitIndex(0);
-      setMidBet(0);
       setInterBet(0);
       setPlusBool(false);
       setInterRaise(0);
@@ -316,13 +306,9 @@ function Game() {
       setSecondRaise(false);
       setAbstractRaise(0);
       setMinusBetBoolean(false);
-      setMinusBet(0);
       setBrSecRaise(0);
       setLastBetRezz(false);
-      setStopIndex(0);
-      setSecBr(0);
-      setUpR(0);
-      setISB(false);
+
         });
     
     socket.on('riverDealt', (riverCards) => {
@@ -343,12 +329,9 @@ function Game() {
       setBetResBoolean(false);
       setClientBetAmount(0);
       setClientRaiseAmount(0);
-      setSaveBet(0);
-      setPotDifference(0);
       setMultiRaise(false);
       setInputInteracted(false);
       setNoLimitIndex(0);
-      setMidBet(0);
       setInterBet(0);
       setPlusBool(false);
       setInterRaise(0);
@@ -357,13 +340,8 @@ function Game() {
       setSecondRaise(false);
       setAbstractRaise(0);
       setMinusBetBoolean(false);
-      setMinusBet(0);
       setBrSecRaise(0);
       setLastBetRezz(false);
-      setStopIndex(0);
-      setSecBr(0);
-      setUpR(0);
-      setISB(false);
     });
     socket.on('titkiBig', ({titkiBig}) => {
       if (titkiStopper<1 && stopper99 <1 && isTurn){
@@ -422,7 +400,6 @@ function Game() {
     socket.on('updateTurnSmallBlind', ({ isTurn, playerId: currentTurnPlayerId }) => {
       if (playerId === currentTurnPlayerId) {
         setIsTurn(isTurn);
-        setISB(true);
         if (isSmallBlind && isTurn && stopB1<1) {
           if (playerMoney>25){
           setPlayerMoney(playerMoney - 25);
@@ -584,7 +561,6 @@ socket.on('betRezzySecRaise',({brSecRaise}) => {
   socket.on ('seccyBR', ({seccyBR}) => {
     if (interBet === 0 && interRaise === 0 && !playerFolded){
     setPlayerMoney(playerMoney-Number(seccyBR));
-    setSecBr(Number(seccyBR));
     }else{
       setPlayerMoney(playerMoney+0);
     }
@@ -1170,8 +1146,6 @@ socket.on('newHand', () => {
   setBetResBoolean(false);
   setClientBetAmount(0);
   setClientRaiseAmount(0);
-  setSaveBet(0);
-  setPotDifference(0);
   setPot(0);
   setTableCards([]);
   setCards([]);
@@ -1182,7 +1156,6 @@ socket.on('newHand', () => {
   setMultiRaise(false);  
   setInputInteracted(false);
   setInterBet(0);
-  setMidBet(0);
   setPlusBool(false);
   setInterRaise(0);
   setRaised(false);
@@ -1190,15 +1163,10 @@ socket.on('newHand', () => {
   setSecondRaise(false);
   setAbstractRaise(0);
   setMinusBetBoolean(false);
-  setMinusBet(0);
   setBrSecRaise(0);
   setLastBetRezz(false);
-  setStopIndex(0);
-  setSecBr(0);
-  setUpR(0);
   setIsSmallBlind(true);
   setIsBigBlind(true);
-  setISB(false);
   setStopB1(0);
   setStopB2(0);
   setTitkiStopper(0);
@@ -1435,7 +1403,6 @@ socket.on('payTheNonFolder', () => {
           console.log ('r4');
           }
           else if(interRaise>0 && minusBetBoolean===true){
-          setSaveBet(numericPlayerMoney-(numericPlayerMoney-brSecRaise+interRaise));
           setPlayerMoney(numericPlayerMoney-brSecRaise+interRaise);
           setPlusBool(true);
           console.log ('r4.5');
