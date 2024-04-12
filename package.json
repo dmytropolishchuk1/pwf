@@ -3,7 +3,7 @@
     "version": "1.0.0",
     "description": "Multiplayer Poker Game",
     "main": "server.js",
-    "scripts": {
+    "scripts": { 
         "start": "npm run start:server && npm run start:client",
         "start:server": "cd server && node server.js",
         "start:client": "cd client && npm start",
