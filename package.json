@@ -9,11 +9,14 @@
         "start:client": "cd client && npm start",
         "build": "cd client && npm install && npm run build",
         "heroku-postbuild": "npm run build",
-        "build:client": "cd client && npm install && npm run build -- --prod", 
+        "build:client": "cd client && npm install && npm run build -- --prod",
         "test": "echo \"Error: no test specified\" && exit 1"
-      },
+    },
     "engines": {
         "node": "20.9.0",
         "npm": "10.1.0"
+    },
+    "dependencies": {
+        "react-scripts": "^5.0.1"
     }
 }
