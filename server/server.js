@@ -18,6 +18,7 @@ const io = require('socket.io')(server, {
 });
 app.use(cors());
 app.use(express.json());
+const PORT = process.env.PORT || 3001;
 
 const stack = [
   {name: "two",   suit: "spades"},
@@ -1909,7 +1910,6 @@ socket.on('winnerIntermed', async ({ highestHandScore, gameId, playerHand, playe
   });
 
 
-const PORT = process.env.PORT || 3001;
 server.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
