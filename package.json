@@ -3,8 +3,8 @@
     "version": "1.0.0",
     "description": "Multiplayer Poker Game",
     "main": "server.js",
-    "scripts": { 
-        "start": "npm run start:server && npm run start:client",
+    "scripts": {
+        "start": "npm run start:server && cd client && npm start",
         "start:server": "cd server && node server.js",
         "start:client": "cd client && npm start",
         "build": "cd client && npm install && npm run build",
@@ -19,6 +19,7 @@
     "dependencies": {
         "concurrently": "^8.2.2",
         "cors": "^2.8.5",
+        "debug": "^4.3.4",
         "dotenv": "^16.4.5",
         "express": "^4.19.2",
         "http": "^0.0.1-security",
