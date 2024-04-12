@@ -4,11 +4,11 @@
     "description": "Multiplayer Poker Game",
     "main": "server.js",
     "scripts": {
-        "start": "node server.js & (cd client && npm start)",
+        "start": "cd server && node server.js & (cd ../client && npm start)",
         "build": "cd client && npm install && npm run build",
         "heroku-postbuild": "npm run build",
         "test": "echo \"Error: no test specified\" && exit 1"
-      },
+    },
       "engines": {
         "node": "20.9.0",
         "npm": "6.x.x"
