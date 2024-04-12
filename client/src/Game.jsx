@@ -136,8 +136,6 @@ function Game() {
   const navigate = useNavigate();
   const [playerHand, setPlayerHand] = useState([]);
   const [tableCards, setTableCards] = useState([]); // If you plan to handle flop, turn, river updates
-  const [turnCard, setTurnCard] = useState([]); // If you plan to handle flop, turn, river updates
-  const [riverCard, setRiverCard] = useState([]); // If you plan to handle flop, turn, river updates
   const [isTurn, setIsTurn] = useState(false);
   const [gameStatus, setGameStatus] = useState('');
   const [gameStarted, setGameStarted] = useState(false);
@@ -151,40 +149,25 @@ function Game() {
   const [runIndex, setRunIndex] = useState(0);
   const [runIndex2, setRunIndex2] = useState(0);
   const [runIndex3, setRunIndex3] = useState(0);
-  const [potDifference, setPotDifference] = useState(0);
-  const [betResCounter, setBetResCounter] = useState(0);
   const [betResBoolean, setBetResBoolean] = useState(false);
-  const [showBet, setShowBet] = useState(false);
   const [checkNoShow, setCheckNoShow] = useState(false);
-  const [saveBet, setSaveBet] = useState(false);
-  const [winner, setWinner] = useState(false);
   const [clientRaiseAmount, setClientRaiseAmount] = useState(0);
-  const [midBet, setMidBet] = useState(0);
   const [multiRaise, setMultiRaise] = useState(false);
   const [dealer, setDealer] = useState(0);
   const [inputInteracted, setInputInteracted] = useState(false);
   const [noLimitIndex, setNoLimitIndex] = useState(0);
-  const [clientBetDif, setClientBetDif] = useState(0);
   const [plusBool, setPlusBool] = useState(false);
-  const [moneySaved, setMoneySaved] = useState(0);
   const [interRaise, setInterRaise] = useState(0);
   const [raised, setRaised] = useState(false);
   const [justOneRaise, setJustOneRaise] = useState(false);
   const [secondRaise, setSecondRaise] = useState(false);
   const [abstractRaise, setAbstractRaise] = useState(false);
   const [minusBetBoolean, setMinusBetBoolean] = useState(false);
-  const [minusBet, setMinusBet] = useState(false);
   const [brSecRaise, setBrSecRaise] = useState(0);
   const [lastBetRezz, setLastBetRezz] = useState(0);
-  const [stopIndex, setStopIndex] = useState(0);
-  const [secBr, setSecBr] = useState(0);
-  const [upR, setUpR] = useState(0);
-  const [blindStopper, setBlindStopper] = useState(0);
   const [SB, setSB] = useState(0);
   const [isSmallBlind, setIsSmallBlind] = useState(false);
   const [isBigBlind, setIsBigBlind] = useState(false);
-  const [iSB, setISB] = useState(false);
-  const [iBB, setIBB] = useState(false);
   const [stopB1, setStopB1] = useState(0);
   const [stopB2, setStopB2] = useState(0);
   const [titkiStopper, setTitkiStopper] = useState(0);
@@ -198,15 +181,12 @@ function Game() {
   const [raiseLimitReached, setRaiseLimitReached] = useState(false);
   const [input2Interacted, setInput2Interacted] = useState(false);
   const [everyonesChips, setEveryonesChips] = useState([]);
-  const [loopNum, setLoopNum] = useState(0);
   const [copied, setCopied] = useState(false);
   const [combinedCards, setCombinedCards]= useState([]);
-  const [victorious, setVictorious] = useState([]);
   const [myHandQuant, setMyHandQuant] = useState(0);
   const [showOtherCards, setShowOtherCards] = useState(false);
   const [storePot, setStorePot] = useState(0);
   const [everyonesHand, setEveryonesHand] = useState ([]);
-  const [everyonesIndex, setEveryonesIndex] = useState ([]);
 
   const [interBet, setInterBet] = useState(0);
   const [interIndex, setInterIndex] = useState(0);
@@ -250,20 +230,14 @@ function Game() {
 
     socket.on('gameUpdated', handleGameUpdated);
 
-    socket.on('gameStarted', ({ gameId}) => {
-      console.log('Game started:');
-    });
     socket.on('cardsDealt', (dealtCards) => {
       setPlayerHand(dealtCards);
-      console.log(dealtCards);
       });
 
     socket.on('chipsDealt', (playerChips) => {
       setPlayerMoney(playerChips);
       const newEveryonesChips = Array(playersInGame.length).fill(5000);
       setEveryonesChips(newEveryonesChips);
-      console.log(playerChips);
-      console.log(`everyones chips array: ${everyonesChips}`);
     })
     socket.on('noCheck', ()=> {
       setCheckNoShow(true);
@@ -309,7 +283,6 @@ function Game() {
         setStopIndex(0);
         setSecBr(0);
         setUpR(0);
-        setISB(false);
       });
     socket.on('turnDealt', (turnCards) => {
       if(runIndex2 <= 1){

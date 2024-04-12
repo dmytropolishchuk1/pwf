@@ -122,7 +122,6 @@ async function dealCards(gameId, playersIds) {
     const socketId = playerToSocketMap[playerId];
     if (socketId) {
       const dealtCards = deck.splice(0, 2); // Take the first two cards from the deck
-      console.log(`Dealing cards to socket ${socketId}:`, dealtCards);
       io.to(socketId).emit('cardsDealt', dealtCards);
       io.to(gameId).emit('gameCardsDealt', { playerId, cards: dealtCards });
     }
@@ -162,7 +161,6 @@ const initializePlayerChips = async (gameId, playersIds) => {
             const socketId = playerToSocketMap[playerId];
             if (socketId) {
                 const playerChips = chips;
-                console.log(`Dealing chips to socket ${socketId}:`, playerChips);
                 io.to(socketId).emit('chipsDealt', playerChips);
                 game.playerMoney.push(playerChips);
             }
@@ -174,14 +172,7 @@ const initializePlayerChips = async (gameId, playersIds) => {
         console.error('Error initializing player chips:', error);
     }
 };
-async function validateBetAmount(gameId, playerId, playerChips, betAmount) {
-  let game = await Game.findOne({ gameId });
-  const socketId = playerToSocketMap[playerId];
-  // Example validation criteria
-  const isAmountValid = betAmount > 0 && betAmount <= playerChips;
-  const meetsMinimumBet = betAmount >= 20;
-  return isAmountValid && meetsMinimumBet;
-}
+
 async function advanceTurn(gameId) {
   let game = await Game.findOne({ gameId });
   if (!game || !game.playersIds.length) return;
@@ -213,7 +204,6 @@ async function blindsTurnUpdate(gameId) {
     const socketId = playerToSocketMap[playerId];
     if (socketId) {
       io.to(socketId).emit('updateTurnSmallBlind', { isTurn, playerId });
-      console.log(`${socketId} ${playerToSocketMap[playerId]} ${game.playersIds} ${isTurn} ${game.currentPlayerIndex}`)
     }
   });
   await game.save();
@@ -233,7 +223,6 @@ async function blindsTurnUpdate2(gameId) {
     const socketId = playerToSocketMap[playerId];
     if (socketId) {
       io.to(socketId).emit('updateTurnBigBlind', { isTurn, playerId });
-      console.log(`${socketId} ${playerToSocketMap[playerId]} ${game.playersIds} ${isTurn} ${game.currentPlayerIndex}`)
     }
   });
   await game.save();
@@ -253,28 +242,11 @@ async function blindsTurnUpdate3(gameId) {
     const socketId = playerToSocketMap[playerId];
     if (socketId) {
       io.to(socketId).emit('updateTurnAfterBlinds', { isTurn, playerId });
-      console.log(`${socketId} ${playerToSocketMap[playerId]} ${game.playersIds} ${isTurn} ${game.currentPlayerIndex}`)
     }
   });
   await game.save();
 }
-async function advanceDealer(gameId) {
-  let game = await Game.findOne({ gameId });
-  if (!game || !game.playersIds.length) return;
 
-  // Advance the dealer
-  game.dealerIndex = (game.dealerIndex + 1) % game.playersIds.length;
-
-  game.playersIds.forEach((playerId, index) => {
-    const isDealer = index === game.dealerIndex;
-    const socketId = playerToSocketMap[playerId];
-    if (socketId) {
-      io.to(socketId).emit('dealerEmitted', { isDealer, playerId });
-    }
-  }); 
-
-  await game.save();
-}
 function dealFlop(gameId) {
   let deck = gameDecks[gameId];
   
@@ -421,23 +393,19 @@ app.get('/', (req, res) => {
           // If the game does not exist, create a new one with the current player as the host
           game = new Game({ gameId, playersIds: [], currentPlayerIndex: 0, pot: 0, isLive: false, tableCards: [], gameTurns: {turnIndex: 0, actionsTaken: 0}, betDifference: 0, playerMoney: [], raiseCount: 0, interBet: 0, betAmount: 0, whoBet:'', whoRaised: '', raiseAmount: 0, raisedHowMany: 0, betresBeforeRaise: 0, whoBetRes: '', betRezzed: 0, minusBet: 0, eventSequence: [], abSy: 0, absy2: 0, whoRaised2: '', aB: 0, aA: 0, dealerIndex: 0, blindStopper: 0, isTurnAdvanced: false, isDealCardsCompleted: false, sB: 0, bB: 0, lT: false, rT: false, reserveRaise: [], combinedBlinds: 0, cashChips: [0,0,0,0,0,0,0,0,0,0], storeBet: 0, folderPlayers: [], updatedPlayersLength: 0, whoSb: '', saveDealer: '', foldDelay: 0, currentPlayerIndexFoldRef: 0, gameIsLive: false, handScore: 0, riverCards: [], scoresOfHands: [], hands: [] });
           await game.save();
-          console.log(`Game created with ID: ${gameId} by host: ${playerId}`);
           if (!game.playersIds.includes(playerId)) {
             game.playersIds.push(playerId);
             game.pot = 0;
           }
         } else if (!game.playersIds.includes(playerId)) {
           game.playersIds.push(playerId);
-          console.log(`Player ${playerId} joined game ${gameId}`);
         } 
         if (!game.gameIsLive){
         await game.save();
         socket.join(gameId);  
-        console.log(game.playersIds);
         
         const uniquePlayersIds = [...new Set(game.playersIds)];
         if (uniquePlayersIds.length !== game.playersIds.length) {
-          console.log('Duplicate playerId found, subtracter emitted');
           io.to(gameId).emit('minusDuplicate', { gameId });
         }
         // Notify all players in the game about the updated game state
@@ -472,10 +440,6 @@ app.get('/', (req, res) => {
         }
       }
     
-      if (hasDuplicate) {
-        console.log('Duplicate player id found and removed');
-        console.log(game.playersIds);
-      }
     
           // Save the updated document with optimistic concurrency control
           await game.save({ versionKey: '__v' });
@@ -487,10 +451,8 @@ app.get('/', (req, res) => {
           break;
         } catch (error) {
           if (error.name === 'VersionError' && retryCount < maxRetries) {
-            console.log('Save failed due to version conflict. Retrying...');
             retryCount++;
           } else {
-            console.error('Error updating game:', error);
             // Handle the error as needed
             break;
           }
@@ -510,21 +472,8 @@ app.get('/', (req, res) => {
         game.isLive = true;
         game.dealerIndex = 0;
         await game.save();
-        console.log(game.playersIds)
-        // Initialize and shuffle the game's deck
         await gameSequence(game);
         await game.save();
-
-        
-        /*await advanceTurn(gameId);
-        await game.save();
-        await io.to(gameId).emit('bB');
-        await advanceTurn(gameId);
-        await game.save();
-        console.log('here');
-        */
-        
-          //io.to(gameId).emit('bigBlind', {bigBlind:50});
 
       }
     });
@@ -544,7 +493,6 @@ app.get('/', (req, res) => {
         if (!game.isTurnAdvanced && game.isDealCardsCompleted && game.blindStopper < 1) {
             io.to(gameId).emit('sB');
             await blindsTurnUpdate(gameId);
-            console.log('small blinding');
             game.blindStopper = 1;
             game.isTurnAdvanced = true; // Set flag to indicate turn advancement
             await game.save();
@@ -553,14 +501,12 @@ app.get('/', (req, res) => {
             io.to(gameId).emit('bB');
             game.whoSb = currentPlayerId;//previous player saved
             await blindsTurnUpdate2(gameId);
-            console.log('big blinding');
             game.blindStopper = 2;
             game.lT = true;
             await game.save();
           }
           if (game.blindStopper === 2 && !game.rT && game.lT){
           await blindsTurnUpdate3(gameId);
-          console.log('after blinds player');
           game.blindStopper = 3;
           game.rT = true;
           await game.save()
@@ -587,7 +533,6 @@ app.get('/', (req, res) => {
           io.to(gameId).emit('sB');
           await blindsTurnUpdate(gameId);
           game.whoSb = currentPlayerId;
-          console.log('small blinding');
           game.blindStopper = 1;
           game.isTurnAdvanced = true; // Set flag to indicate turn advancement
           await game.save();
@@ -596,19 +541,16 @@ app.get('/', (req, res) => {
           io.to(gameId).emit('bB');
           game.whoSb = currentPlayerId;//previous player saved
           await blindsTurnUpdate2(gameId);
-          console.log('big blinding');
           game.blindStopper = 2;
           game.lT = true;
           await game.save();
         }
         if (game.blindStopper === 2 && !game.rT && game.lT){
         await blindsTurnUpdate3(gameId);
-        console.log('after blinds player');
         game.blindStopper = 3;
         game.rT = true;
         await game.save()
         }
-        console.log(`${game.blindStopper} ${game.isTurnAdvanced}`);
       } catch (error) {
         console.error('Error in gameSequence:', error);
     }
@@ -670,7 +612,6 @@ socket.on('playerAction', async ({ gameId, action, playersIds, betAmount, betDif
   
   const uniquePlayersIds = [...new Set(game.playersIds)];
       if (uniquePlayersIds.length !== game.playersIds.length) {
-        console.log('Duplicate playerId found and removed');
         game.playersIds = uniquePlayersIds;
       }
   
@@ -708,7 +649,6 @@ socket.on('playerAction', async ({ gameId, action, playersIds, betAmount, betDif
       && game.raiseCount === 1 && game.playersIds.length === 4 && game.gameTurns.turnIndex === 0 
 
     )){
-        console.log(`previous player: ${(game.playersIds[(game.currentPlayerIndex - 1 + game.playersIds.length) % game.playersIds.length])} previous player-1: ${(game.playersIds[(game.currentPlayerIndex - 2 + game.playersIds.length) % game.playersIds.length])} rc: ${game.raiseCount} wr: ${game.whoRaised}`);
       }
       else{
       game.gameTurns.actionsTaken = game.gameTurns.actionsTaken+1;  
@@ -718,11 +658,8 @@ socket.on('playerAction', async ({ gameId, action, playersIds, betAmount, betDif
       game.foldDelay += 1;
       game.currentPlayerIndexFoldRef = (game.currentPlayerIndexFoldRef+1) % game.playersIds.length;
       game.updatedPlayersLength -= 1;
-      console.log(`previous player..: ${(game.playersIds[(game.currentPlayerIndex - 1 + game.playersIds.length) % game.playersIds.length])} cpind-3: ${(game.playersIds[(game.currentPlayerIndex - 3 + game.playersIds.length) % game.playersIds.length])} rc: ${game.raiseCount} wr: ${game.whoRaised} wr2 ${game.whoRaised2}`);
-      console.log(`yes0. actions taken: ${game.gameTurns.actionsTaken}`);
       if (game.gameTurns.turnIndex === 0 && game.raiseCount === 0){
         betAmount = 50;
-        console.log('player folded, betAmount saved');
         io.to(gameId).emit('betAfterFold', { betAmount });
       }
       await game.save();
@@ -734,7 +671,6 @@ socket.on('playerAction', async ({ gameId, action, playersIds, betAmount, betDif
     /*if (game.raiseCount === 0 && game.gameTurns.turnIndex === 0){
       game.gameTurns.actionsTaken = game.gameTurns.actionsTaken + 1;
     }*/
-    console.log(`yes. actions taken: ${game.gameTurns.actionsTaken}`);
     game.currentPlayerIndexFoldRef = (game.currentPlayerIndexFoldRef+1) % game.playersIds.length;
     await game.save();
   }
@@ -744,19 +680,15 @@ socket.on('playerAction', async ({ gameId, action, playersIds, betAmount, betDif
     case 'check':
       game.gameTurns.actionsTaken = game.gameTurns.actionsTaken+1;
       if (socket.id === playerToSocketMap[currentPlayerId]) {
-    console.log(`Action ${action} processed for player ${currentPlayerId}`);
     await advanceTurn(gameId);
   } 
   break;
     case 'bet':
       game.gameTurns.actionsTaken = 1;
-      console.log(game.raiseCount);
   if (socket.id === playerToSocketMap[currentPlayerId]) {
     game.betAmount = betAmount;
     game.whoBet = currentPlayerId;
     game.raisedHowMany = 0;
-    //game.playerMoney[currentPlayerId] -= game.betDifference;
-    console.log(`Action ${action} processed for player ${currentPlayerId}`);
     io.to(gameId).emit('noCheck');
     io.to(gameId).emit('onlyBetRes');
     await advanceTurn(gameId);
@@ -768,7 +700,6 @@ socket.on('playerAction', async ({ gameId, action, playersIds, betAmount, betDif
     game.raisedHowMany = game.raisedHowMany+1;
     game.gameTurns.actionsTaken = 1;
   if (socket.id === playerToSocketMap[currentPlayerId]) {
-    console.log(game.raiseCount);
     io.to(gameId).emit('didRaise');
     io.to(gameId).emit('minRaise', {minRaise:betAmount});
     let betDiff = game.betDifference;
@@ -1344,12 +1275,6 @@ socket.on('playerAction', async ({ gameId, action, playersIds, betAmount, betDif
   }
 console.log(`you know ${game.playersIds[(game.currentPlayerIndex+1)%game.playersIds.length]}`);
 
-
-  /*else if (game.raiseCount === 2 && game.whoBet !== currentPlayerId && game.whoRaised === currentPlayerId && game.betRezzed === 3){
-    betAmount = game.abSy2-game.raiseAmount;
-    console.log(`yesw2 gameRA:${game.raiseAmount} gameBA:${game.betAmount} gameabsy2:${game.abSy2}`);
-  } */
-
   console.log(`yes22. actions taken: ${game.gameTurns.actionsTaken} and curindfold: ${game.currentPlayerIndexFoldRef}`);
 
   if (game.folderPlayers.length === (game.playersIds.length-1)){
@@ -1698,7 +1623,6 @@ console.log(`you know ${game.playersIds[(game.currentPlayerIndex+1)%game.players
       io.to(gameId).emit('dealerEmitted', { isDealer });
       io.to(gameId).emit('newHand');
       await game.save();
-      console.log(game.cashChips);
     }
 }
   await game.save();
@@ -1744,9 +1668,6 @@ socket.on('foldSkip', async ({gameId}) => {
         game.isLive = true;
         game.updatedPlayersLength = game.playersIds.length;
         await game.save();
-  
-        // Notify players that the game has started
-        io.to(gameId).emit('gameStarted', { gameId });
       } else {
         // Not all players are ready, update all clients with the current ready count
         io.to(gameId).emit('playersReady', { count: game.readyPlayers.length, total: game.playersIds.length });
@@ -1755,7 +1676,6 @@ socket.on('foldSkip', async ({gameId}) => {
   });
 
   socket.on('playerLeaving', async ({ gameId, playerId }) => {
-    console.log(`Player ${playerId} leaving game ${gameId}`);
     let game = await Game.findOne({ gameId });
     
     try {
@@ -1765,9 +1685,7 @@ socket.on('foldSkip', async ({gameId}) => {
         const index = game.playersIds.findIndex(id => playerToSocketMap[id] === socket.id);
         if (index !== -1) {
             update = { $pull: { playersIds: playerId } };
-            console.log(`Player ${playerId} removed from game ${gameId}.`);
         } else {
-            console.log(`Player ${playerId} not found in game ${gameId}.`);
         }
 
         // If there are no more players left in the game, delete the game object
@@ -1775,16 +1693,13 @@ socket.on('foldSkip', async ({gameId}) => {
         const updatedGame = await Game.findOneAndUpdate(filter, update, options);
 
         if (!updatedGame) {
-            console.log(`Game ${gameId} not found.`);
             return;
         }
 
         // If the game object has no players left, delete it
         if (updatedGame.playersIds.length === 0) {
             await Game.deleteOne({ gameId });
-            console.log(`Game ${gameId} removed as no players left.`);
         } else {
-            console.log("Updated playersIds:", updatedGame.playersIds);
         }
         
         // Notify clients about the updated game state
@@ -1807,9 +1722,6 @@ socket.on('cashUpdate', async ({ cashUpdate, playerId, gameId }) => {
         // Retrieve the game document
         let game = await Game.findOne({ gameId });
 
-        console.log(`Cash updating, cash update: ${cashUpdate}, playerId: ${playerId}`);
-        console.log("Length of playersIds:", game.playersIds.length);
-        console.log("Length of cashChips:", game.cashChips.length);
 
         const playerIndex = game.playersIds.indexOf(playerId);
 
@@ -1820,7 +1732,6 @@ socket.on('cashUpdate', async ({ cashUpdate, playerId, gameId }) => {
             await game.save();
         }
 
-        console.log(game.cashChips);
 
         // Release the mutex to allow other concurrent operations
         release();
@@ -1899,7 +1810,6 @@ socket.on('winnerIntermed', async ({ highestHandScore, gameId, playerHand, playe
       // If there are no more players left in the game, delete the game object
       if (game.playersIds.length === 0 ) {
         await Game.deleteOne({ gameId });
-        console.log(`game deleted ${gameId}`)
         // You might also want to emit an event to inform other clients that the game has been deleted
         // socket.broadcast.to(gameId).emit('gameDeleted');
       } else {
