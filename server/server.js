@@ -18,6 +18,31 @@ const io = require('socket.io')(server, {
 });
 app.use(cors());
 app.use(express.json());
+const cluster = require('cluster');
+const numCPUs = require('os').cpus().length;
+
+
+if (cluster.isMaster) {
+  console.log(`Master ${process.pid} is running`);
+
+  // Fork workers
+  for (let i = 0; i < numCPUs; i++) {
+    cluster.fork();
+  }
+
+  cluster.on('exit', (worker, code, signal) => {
+    console.log(`Worker ${worker.process.pid} died`);
+  });
+} else {
+  // Worker processes have the Express app server.
+  server.listen(process.env.PORT || 3000, () => {
+    console.log(`Worker ${process.pid} started, listening on port ${process.env.PORT || 3000}`);
+  });
+
+  // Handle socket.io logic here if needed
+}
+
+
 const PORT = process.env.PORT || 3001;
 
 const stack = [
