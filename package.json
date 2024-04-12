@@ -1,0 +1,37 @@
+{
+    "name": "finalpoker",
+    "version": "1.0.0",
+    "description": "Multiplayer Poker Game",
+    "main": "server.js",
+    "scripts": {
+        "start": "cd server && node server.js",
+        "build": "cd client && npm install && npm run build",
+        "heroku-postbuild": "npm run build", 
+        "test": "echo \"Error: no test specified\" && exit 1"
+      },
+      "engines": {
+        "node": "20.9.0",
+        "npm": "6.x.x"
+      },
+    "dependencies": {
+    "async-mutex": "^0.5.0",
+    "concurrently": "^8.2.2",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.2",
+    "express": "^4.18.2",
+    "http": "^0.0.1-security",
+    "mongoose": "^8.1.1",
+    "path": "^0.12.7",
+    "socket.io": "^4.7.4",
+    "@testing-library/jest-dom": "^5.17.0",
+    "@testing-library/react": "^13.4.0",
+    "@testing-library/user-event": "^13.5.0",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "react-router-dom": "^6.22.0",
+    "react-scripts": "^5.0.1",
+    "socket.io-client": "^4.7.4",
+    "uuid": "^9.0.1",
+    "web-vitals": "^2.1.4"
+    }
+  }
