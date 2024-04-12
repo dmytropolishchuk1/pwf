@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import io from 'socket.io-client';
 import { v4 as uuidv4 } from 'uuid';
 
-const SERVER_URL = ''; 
+const SERVER_URL = "https://pwfpwfpwf-3f02d2a899b2.herokuapp.com/"; 
 const socket = io(SERVER_URL);
 
 const Landing = () => {

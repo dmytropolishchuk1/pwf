@@ -43,8 +43,6 @@ if (cluster.isMaster) {
 }
 
 
-const PORT = process.env.PORT || 3001;
-
 const stack = [
   {name: "two",   suit: "spades"},
   {name: "three", suit: "spades"},
@@ -1845,6 +1843,3 @@ socket.on('winnerIntermed', async ({ highestHandScore, gameId, playerHand, playe
   });
 
 
-server.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
-});
