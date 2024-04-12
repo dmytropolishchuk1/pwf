@@ -29,5 +29,8 @@
         "socket.io": "^4.7.5",
         "socket.io-client": "^4.7.5",
         "web-vitals": "^3.5.2"
+    },
+    "devDependencies": {
+        "eslint-plugin-import": "^2.29.1"
     }
 }
