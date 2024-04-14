@@ -1657,6 +1657,7 @@ socket.on('foldSkip', async ({gameId}) => {
       } else {
         // Not all players are ready, update all clients with the current ready count
         io.to(gameId).emit('playersReady', { count: game.readyPlayers.length, total: game.playersIds.length });
+        io.to(gameId).emit('gameStarted');//gamestarted maybe misplaced
       }
     }
   });
