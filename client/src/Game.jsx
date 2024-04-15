@@ -351,6 +351,12 @@ function Game() {
       setTitkiStopper(titkiStopper+1);
     }
     });
+    socket.on('sB', () => {
+      setIsSmallBlind(true);
+      });
+    socket.on('bB', () => {
+      setIsBigBlind(true);
+      });
     socket.on('newPot2', ({newPot2, betAmount}) => {
       setPot(Number(newPot2));
       socket.emit('blindSter', {blindSter:Number(betAmount), gameId});
@@ -674,12 +680,6 @@ socket.on ('bBB', ({bBB}) => {
   }
 });
 
-socket.on('sB', () => {
-  setIsSmallBlind(true);
-  });
-socket.on('bB', () => {
-  setIsBigBlind(true);
-  });
 socket.on('skiPot', ({skiPot}) => {
   setPot(Number(skiPot));
   });
@@ -1124,7 +1124,6 @@ console.log(`everyonesHand before update: ${everyonesHand}`);
 });
 
 socket.on('newHand', () => {
-  socket.emit('gameSequence2', { gameId });
   setRaiseLimitReached(false);
   setPlayerFolded(false);
   setInput2Interacted(false);
@@ -1162,6 +1161,7 @@ socket.on('newHand', () => {
   setTurnCount(0);
   setTurnCount2(0);
   setTurnCount3(0);
+  socket.emit('gameSequence2', { gameId });
 });
 
 window.addEventListener('beforeunload', function(event) {
