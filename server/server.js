@@ -1654,7 +1654,7 @@ socket.on('foldSkip', async ({gameId}) => {
         game.isLive = true;
         game.updatedPlayersLength = game.playersIds.length;
         await game.save();
-        io.to(gameId).emit('gameStarted');
+        io.to(gameId).emit('gameStarted', {gameId});
       } else {
         // Not all players are ready, update all clients with the current ready count
         io.to(gameId).emit('playersReady', { count: game.readyPlayers.length, total: game.playersIds.length });
