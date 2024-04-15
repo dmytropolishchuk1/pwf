@@ -377,13 +377,11 @@ function Game() {
           console.log(`player money:  ${playerMoney} `)
           socket.emit('potBB', {potBB: 50, gameId});
           setStopper99(stopper99+1);
-          setIsTurn(false);
           console.log(`player money:  ${playerMoney} `)
         } else if (playerMoney<50 && stopper99<1){
           socket.emit('potBB', {potBB: playerMoney, gameId});
           setPlayerMoney(playerMoney-playerMoney);
           setStopper99(stopper99+1);
-          setIsTurn(false);
           console.log(`player money:  ${playerMoney} 2`)
         }
         console.log(`player money:  ${playerMoney} 3`)
@@ -405,11 +403,9 @@ function Game() {
           setPlayerMoney(playerMoney - 25);
           setSB(25);
           socket.emit('potSB', {potSB: 25, gameId});
-          setIsTurn(false);
         } else {
           socket.emit('potSB', {potSB: playerMoney, gameId});
           setPlayerMoney(playerMoney-playerMoney);
-          setIsTurn(false);
         }
           setStopB1(stopB1+1);
           setIsSmallBlind(false);
@@ -627,7 +623,6 @@ socket.on('zzTT', ({zzTT}) => {
   }else{
     setPlayerMoney(playerMoney+0);
   }
-  setIsTurn(false);
 });
 socket.on ('secSEC', ({secSEC}) => {
   if (interBet === 0 && interRaise !== 0 && isTurn){
@@ -635,7 +630,6 @@ socket.on ('secSEC', ({secSEC}) => {
   }else{
     setPlayerMoney(playerMoney+0);
   }
-  setIsTurn(false);
 });
 socket.on ('vvPP', ({vvPP}) => {
   if (interBet === 0 && interRaise !== 0 && isTurn){
@@ -643,7 +637,6 @@ socket.on ('vvPP', ({vvPP}) => {
   }else{
     setPlayerMoney(playerMoney+0);
   }
-  setIsTurn(false);
 });
 socket.on ('aaTT', ({aaTT}) => {
   if (interBet === 0 && interRaise === 0 && isTurn){
@@ -651,7 +644,6 @@ socket.on ('aaTT', ({aaTT}) => {
   }else{
     setPlayerMoney(playerMoney+0);
   }
-  setIsTurn(false);
 });
 socket.on ('ppPP', ({ppPP}) => {
   if (interBet !== 0 && interRaise === 0 && isTurn){
@@ -659,7 +651,6 @@ socket.on ('ppPP', ({ppPP}) => {
   }else{
     setPlayerMoney(playerMoney+0);
   }
-  setIsTurn(false);
 });
 socket.on ('ddDD', ({ddDD}) => {
   if (interBet === 0 && interRaise !== 0 && isTurn){
@@ -667,7 +658,6 @@ socket.on ('ddDD', ({ddDD}) => {
   }else{
     setPlayerMoney(playerMoney+0);
   }
-  setIsTurn(false);
 });
 socket.on ('xXX', ({xXX}) => {
   if (interBet === 0 && interRaise !== 0 && isTurn){
@@ -675,7 +665,6 @@ socket.on ('xXX', ({xXX}) => {
   }else{
     setPlayerMoney(playerMoney+0);
   }
-  setIsTurn(false);
 });
 socket.on ('bBB', ({bBB}) => {
   if (interBet === 0 && interRaise !== 0 && isTurn){
@@ -683,7 +672,6 @@ socket.on ('bBB', ({bBB}) => {
   }else{
     setPlayerMoney(playerMoney+0);
   }
-  setIsTurn(false);
 });
 
 socket.on('sB', () => {
