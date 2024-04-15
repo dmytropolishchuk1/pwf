@@ -1327,6 +1327,7 @@ socket.on('payTheNonFolder', () => {
         socket.off('winningHandScore');
         socket.off('gameCardsDealt');
         socket.off('determineWinner');
+        socket.off('minusDuplicate');
       };
     }, [gameId, socket, turnCount, playerId, pot, cards, runIndex, dealer, myHandQuant, storePot, everyonesHand]);
   
