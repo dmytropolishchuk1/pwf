@@ -1115,7 +1115,7 @@ console.log(`everyonesHand before update: ${everyonesHand}`);
     setPlayerMoney(playerMoney + (storePot/Number(numPlayersWithHighestScore)));
     console.log(`pm after applying winnings: ${playerMoney}`);
   }
-  if (!playerFolded && myHandQuant === Number(highestHandScore) && Number(numPlayersWithHighestScore) === 2 && playersInGame.length === 2){
+  else if (!playerFolded && myHandQuant === Number(highestHandScore) && Number(numPlayersWithHighestScore) === 2 && playersInGame.length === 2){
     setPlayerMoney(playerMoney + (storePot/2));
   }
   console.log(highestHandScore);
