@@ -369,13 +369,10 @@ function Game() {
         console.log('after blinds player');
         console.log('isTurn:', isTurn);
       }
-      setIsSmallBlind(false);
-      setIsBigBlind(false);
     });  
     socket.on('updateTurnBigBlind', ({ isTurn, playerId: currentTurnPlayerId }) => {
       if (playerId === currentTurnPlayerId) {
         setIsTurn(isTurn);
-        setIsSmallBlind(false);
         if (isBigBlind && isTurn && stopB2<1) {
           if (playerMoney>=50 && stopper99<1){
             console.log(`player money:  ${playerMoney} `)
@@ -392,7 +389,6 @@ function Game() {
         }
         console.log(`player money:  ${playerMoney} 3`)
           setStopB2(stopB2+1);
-          setIsBigBlind(false); 
           console.log(`player money:  ${playerMoney} 4`)
         }
         console.log(`player money:  ${playerMoney} 5`)
@@ -414,7 +410,6 @@ function Game() {
           setPlayerMoney(playerMoney-playerMoney);
         }
           setStopB1(stopB1+1);
-          setIsSmallBlind(false);
           playSound(betSound);
         }
         
@@ -1124,6 +1119,8 @@ console.log(`everyonesHand before update: ${everyonesHand}`);
 });
 
 socket.on('newHand', () => {
+  setIsSmallBlind(false);
+  setIsBigBlind(false);
   setRaiseLimitReached(false);
   setPlayerFolded(false);
   setInput2Interacted(false);
@@ -1152,8 +1149,6 @@ socket.on('newHand', () => {
   setMinusBetBoolean(false);
   setBrSecRaise(0);
   setLastBetRezz(false);
-  setIsSmallBlind(true);
-  setIsBigBlind(true);
   setStopB1(0);
   setStopB2(0);
   setTitkiStopper(0);
