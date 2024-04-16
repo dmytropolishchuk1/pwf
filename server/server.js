@@ -177,6 +177,24 @@ async function advanceTurn(gameId) {
     }
   });
 }
+async function advanceTurnNewStage(gameId) {
+  let game = await Game.findOne({ gameId });
+  if (!game || !game.playersIds.length) return;
+
+  // Advance the turn
+  game.currentPlayerIndex = (game.dealerIndex + 1) % game.playersIds.length;
+  
+  await game.save();
+
+  // Notify players about the turn update
+  game.playersIds.forEach((playerId, index) => {
+    const isTurn = index === game.currentPlayerIndex;
+    const socketId = playerToSocketMap[playerId];
+    if (socketId) {
+      io.to(socketId).emit('updateTurn', { isTurn, playerId });
+    }
+  });
+}
 async function blindsTurnUpdate(gameId) {
   let game = await Game.findOne({ gameId });
   if (!game || !game.playersIds.length) return;
@@ -1293,7 +1311,7 @@ console.log(`you know ${game.playersIds[(game.currentPlayerIndex+1)%game.players
     // Trigger the appropriate game stage based on turnIndex
     if (game.gameTurns.turnIndex === 1) {
         io.to(gameId).emit('goFlop');
-        await blindsTurnUpdate(gameId);
+        await advanceTurnNewStage(gameId);
         if (game.updatedPlayersLength === game.playersIds.length || !game.folderPlayers.includes(game.playersIds[game.dealerIndex+1])){
         game.currentPlayerIndex = (game.dealerIndex+1);
         }
@@ -1384,7 +1402,7 @@ console.log(`you know ${game.playersIds[(game.currentPlayerIndex+1)%game.players
         console.log(`${currentPlayerId} ${game.playersIds[game.dealerIndex+1]}`);
     } else if (game.gameTurns.turnIndex === 2) {
         io.to(gameId).emit('goTurn');
-        await blindsTurnUpdate(gameId);
+        await advanceTurnNewStage(gameId);
         if (game.updatedPlayersLength === game.playersIds.length || !game.folderPlayers.includes(game.playersIds[game.dealerIndex+1])){
           game.currentPlayerIndex = (game.dealerIndex+1);
           }
@@ -1476,7 +1494,7 @@ console.log(`you know ${game.playersIds[(game.currentPlayerIndex+1)%game.players
         console.log(`${currentPlayerId} ${game.playersIds[game.dealerIndex+1]}`);
     } else if (game.gameTurns.turnIndex === 3) {
         io.to(gameId).emit('goRiver');
-        await blindsTurnUpdate(gameId);
+        await advanceTurnNewStage(gameId);
         if (game.updatedPlayersLength === game.playersIds.length || !game.folderPlayers.includes(game.playersIds[game.dealerIndex+1])){
           game.currentPlayerIndex = (game.dealerIndex+1);
           }
