@@ -362,6 +362,7 @@ function Game() {
       socket.emit('blindSter', {blindSter:Number(betAmount), gameId});
     });
     socket.on('updateTurnAfterBlinds', ({ isTurn, playerId: currentTurnPlayerId }) => {
+      const playerId = localStorage.getItem('playerId'); 
       if (playerId === currentTurnPlayerId) {
         setIsTurn(isTurn);
         setBetResBoolean(true);
@@ -371,6 +372,7 @@ function Game() {
       }
     });  
     socket.on('updateTurnBigBlind', ({ isTurn, playerId: currentTurnPlayerId }) => {
+      const playerId = localStorage.getItem('playerId'); 
       if (playerId === currentTurnPlayerId) {
         setIsTurn(isTurn);
         if (isBigBlind && isTurn && stopB2<1) {
@@ -398,6 +400,7 @@ function Game() {
       }
     });  
     socket.on('updateTurnSmallBlind', ({ isTurn, playerId: currentTurnPlayerId }) => {
+      const playerId = localStorage.getItem('playerId'); 
       if (playerId === currentTurnPlayerId) {
         setIsTurn(isTurn);
         if (isSmallBlind && isTurn && stopB1<1) {
@@ -419,6 +422,7 @@ function Game() {
       }
     });  
     socket.on('updateTurn', ({ isTurn, playerId: currentTurnPlayerId }) => {
+      const playerId = localStorage.getItem('playerId'); 
       if (playerId === currentTurnPlayerId) {
         setIsTurn(isTurn);
       }
