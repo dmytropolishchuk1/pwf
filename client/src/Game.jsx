@@ -1130,6 +1130,8 @@ console.log(`everyonesHand before update: ${everyonesHand}`);
 });
 
 socket.on('newHand', () => {
+const gameId = localStorage.getItem('gameId');
+
   setIsSmallBlind(false);
   setIsBigBlind(false);
   setRaiseLimitReached(false);

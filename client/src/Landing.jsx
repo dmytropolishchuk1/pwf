@@ -27,6 +27,7 @@ const Landing = () => {
     // Emit 'joinGame' with the new gameId, the persisted playerId, and a placeholder playerName
     socket.emit('joinGame', { gameId: newGameId, playerId, playerName: 'Host' });
     // Navigate to the game page with the new gameId
+    localStorage.setItem('gameId', newGameId);
     navigate(`/game/${newGameId}`);
   };
 
