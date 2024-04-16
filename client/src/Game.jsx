@@ -384,11 +384,13 @@ function Game() {
           setPlayerMoney(playerMoney - 50);
           console.log(`player money:  ${playerMoney} `);
           socket.emit('potBB', {potBB: 50, gameId});
+          setIsBigBlind(false);
           setStopper99(stopper99+1);
           console.log(`player money:  ${playerMoney} `);
         } else if (playerMoney<50 && stopper99<1){
           socket.emit('potBB', {potBB: playerMoney, gameId});
           setPlayerMoney(playerMoney-playerMoney);
+          setIsBigBlind(false);
           setStopper99(stopper99+1);
           console.log(`player money:  ${playerMoney} 2`);
         }
