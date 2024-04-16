@@ -1316,7 +1316,7 @@ socket.on('payTheNonFolder', () => {
         socket.off('determineWinner');
         socket.off('minusDuplicate');
       };
-    }, [gameId, socket, turnCount, playerId, pot, cards, runIndex, dealer, myHandQuant, storePot, everyonesHand]);
+    }, [gameId, socket, turnCount, playerId, pot, cards, runIndex, dealer, myHandQuant, storePot, everyonesHand, isSmallBlind, isBigBlind]);
   
 
     const handlePlayerAction = (actionType, betAmount, event, clientBetAmount) => {
