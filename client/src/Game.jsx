@@ -362,6 +362,8 @@ function Game() {
       socket.emit('blindSter', {blindSter:Number(betAmount), gameId});
     });
     socket.on('updateTurnAfterBlinds', ({ isTurn, playerId: currentTurnPlayerId }) => {
+      setIsSmallBlind(false);
+      setIsBigBlind(false);
       const playerId = localStorage.getItem('playerId'); 
       if (playerId === currentTurnPlayerId) {
         setIsTurn(isTurn);
@@ -372,28 +374,30 @@ function Game() {
       }
     });  
     socket.on('updateTurnBigBlind', ({ isTurn, playerId: currentTurnPlayerId }) => {
+      setIsSmallBlind(false);
       const playerId = localStorage.getItem('playerId'); 
       if (playerId === currentTurnPlayerId) {
         setIsTurn(isTurn);
         if (isBigBlind && isTurn && stopB2<1) {
           if (playerMoney>=50 && stopper99<1){
-            console.log(`player money:  ${playerMoney} `)
+            console.log(`player money:  ${playerMoney} `);
           setPlayerMoney(playerMoney - 50);
-          console.log(`player money:  ${playerMoney} `)
+          console.log(`player money:  ${playerMoney} `);
           socket.emit('potBB', {potBB: 50, gameId});
           setStopper99(stopper99+1);
-          console.log(`player money:  ${playerMoney} `)
+          console.log(`player money:  ${playerMoney} `);
         } else if (playerMoney<50 && stopper99<1){
           socket.emit('potBB', {potBB: playerMoney, gameId});
           setPlayerMoney(playerMoney-playerMoney);
           setStopper99(stopper99+1);
-          console.log(`player money:  ${playerMoney} 2`)
+          console.log(`player money:  ${playerMoney} 2`);
         }
-        console.log(`player money:  ${playerMoney} 3`)
+        console.log(`player money:  ${playerMoney} 3`);
           setStopB2(stopB2+1);
-          console.log(`player money:  ${playerMoney} 4`)
+          console.log(`player money:  ${playerMoney} 4`);
         }
-        console.log(`player money:  ${playerMoney} 5`)
+        setIsBigBlind(false);
+        console.log(`player money:  ${playerMoney} 5`);
         console.log('Update turn event received');
         console.log('isBigBlind:', isBigBlind);
         console.log('isTurn:', isTurn);
@@ -415,7 +419,8 @@ function Game() {
           setStopB1(stopB1+1);
           playSound(betSound);
         }
-        
+        setIsSmallBlind(false);
+        setIsBigBlind(false);
         console.log('Update turn event received');
         console.log('isSmallBlind:', isSmallBlind);
         console.log('isTurn:', isTurn);
