@@ -1621,12 +1621,10 @@ console.log(`you know ${game.playersIds[(game.currentPlayerIndex+1)%game.players
       game.whoSb = '';
       game.dealerIndex = (game.dealerIndex + 1) % game.playersIds.length;
       game.currentPlayerIndex = (game.dealerIndex+1);
-      game.playersIds.length = game.playersIds.length;
       await game.save();
       const isDealer = game.dealerIndex;
       io.to(gameId).emit('dealerEmitted', { isDealer });
       io.to(gameId).emit('newHand');
-      await game.save();
     }
 }
   await game.save();
