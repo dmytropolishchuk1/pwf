@@ -1131,10 +1131,11 @@ console.log(`everyonesHand before update: ${everyonesHand}`);
     console.log(`pm after applying winnings: ${playerMoney}`);
     setPayoutStopper(payoutStopper + 1);
   }
-  else if (!playerFolded && myHandQuant === Number(highestHandScore) && Number(numPlayersWithHighestScore) > 1 && payoutStopper2 < 1){
-    setPlayerMoney(playerMoney + (storePot/numPlayersWithHighestScore));
+  else if (!playerFolded && Number(numPlayersWithHighestScore) > 1 && payoutStopper2 < 1 && playersInGame.length === 2){
+    setPlayerMoney(playerMoney + (storePot/2));
     setPayoutStopper2(payoutStopper2 + 1);
   }
+  // need to add more func for 2 + players 
   console.log(highestHandScore);
   console.log(`storepot: ${storePot}`);
 
