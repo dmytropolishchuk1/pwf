@@ -1097,6 +1097,7 @@ socket.on('playerAction', async ({ gameId, action, playersIds, betAmount, betDif
    
     } else if (game.raiseCount === 0 && game.gameTurns.turnIndex === 0 && game.currentPlayerIndex === (game.dealerIndex + 1) % game.playersIds.length && (!game.folderPlayers.some(playerId => game.playersIds.includes(playerId)))){
       game.gameTurns.actionsTaken = game.playersIds.length;
+      betAmount = betAmount;
       console.log('lll');
     }
     else if (game.raiseCount === 1 && game.gameTurns.turnIndex === 0 && game.currentPlayerIndex === (game.dealerIndex + 1) % game.playersIds.length && currentPlayerId !== game.whoRaised){
