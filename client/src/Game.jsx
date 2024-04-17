@@ -344,7 +344,7 @@ function Game() {
       setLastBetRezz(false);
     });
     socket.on('titkiBig', ({titkiBig}) => {
-      if (titkiStopper<1 && stopper99 <1 && isTurn){
+      if (titkiStopper<1 && isTurn){
       setIsSmallBlind(false);
       setIsBigBlind(false);
       setClientBetAmount(Number(titkiBig));
