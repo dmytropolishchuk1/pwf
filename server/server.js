@@ -1750,13 +1750,14 @@ socket.on('sendHandScore', async ({ handScore, gameId }) => {
   game.scoresOfHands.push(handScore);
   await game.save();
   
+  if (game.scoresOfHands.length === (game.playersIds.length - game.folderPlayers.length)){
     const highestHandScore = Math.max(...game.scoresOfHands);
     const numPlayersWithHighestScore = game.scoresOfHands.filter(score => score === highestHandScore).length;
     io.to(gameId).emit('determineWinner', { highestHandScore, numPlayersWithHighestScore });
     console.log(`${handScore} : handScore highest handScore ${highestHandScore}`);
+  }
 
-
-  console.log(`${handScore} : handScore gpidlenght ${game.playersIds.length} `);
+  console.log(`game scores of hands: ${game.scoresOfHands} and its length: ${game.scoresOfHands.length} ${handScore} : handScore gpidlenght ${game.playersIds.length} `);
 });
 
 socket.on('winnerIntermed', async ({ highestHandScore, gameId, playerHand, playerId }) => {

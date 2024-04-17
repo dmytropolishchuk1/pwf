@@ -363,7 +363,7 @@ function Game() {
       if (Number(newPot2) === 50){
         setPot(75);
       } 
-      socket.emit('blindSter', {blindSter:Number(betAmount), gameId});
+      socket.emit('blindSter', {blindSter: betAmount, gameId});
     });
     socket.on('updateTurnAfterBlinds', ({ isTurn, playerId: currentTurnPlayerId }) => {
       setIsSmallBlind(false);
@@ -1124,11 +1124,11 @@ console.log(`everyonesHand before update: ${everyonesHand}`);
   console.log(`highestHandScore: ${highestHandScore}`);
   console.log(`numPlayersWithHighestScore: ${numPlayersWithHighestScore}`);
   if (!playerFolded && myHandQuant === Number(highestHandScore) && Number(numPlayersWithHighestScore) === 1){
-    setPlayerMoney(playerMoney + (storePot/Number(numPlayersWithHighestScore)));
+    setPlayerMoney(playerMoney + storePot);
     console.log(`pm after applying winnings: ${playerMoney}`);
   }
-  else if (!playerFolded && myHandQuant === Number(highestHandScore) && Number(numPlayersWithHighestScore) === 2 && playersInGame.length === 2){
-    setPlayerMoney(playerMoney + (storePot/2));
+  else if (!playerFolded && myHandQuant === Number(highestHandScore) && Number(numPlayersWithHighestScore) > 1){
+    setPlayerMoney(playerMoney + (storePot/numPlayersWithHighestScore));
   }
   console.log(highestHandScore);
   console.log(`storepot: ${storePot}`);
