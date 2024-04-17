@@ -348,8 +348,9 @@ function Game() {
       setIsSmallBlind(false);
       setIsBigBlind(false);
       setClientBetAmount(Number(titkiBig));
+      setTitkiStopper(titkiStopper+1);
     }
-    setTitkiStopper(titkiStopper+1);
+    
     });
     socket.on('sB', () => {
       setIsSmallBlind(true);
@@ -359,6 +360,9 @@ function Game() {
       });
     socket.on('newPot2', ({newPot2, betAmount}) => {
       setPot(Number(newPot2));
+      if (Number(newPot2) === 50){
+        setPot(75);
+      } 
       socket.emit('blindSter', {blindSter:Number(betAmount), gameId});
     });
     socket.on('updateTurnAfterBlinds', ({ isTurn, playerId: currentTurnPlayerId }) => {
@@ -414,9 +418,13 @@ function Game() {
           setPlayerMoney(playerMoney - 25);
           setSB(25);
           socket.emit('potSB', {potSB: 25, gameId});
+          setIsSmallBlind(false);
+          setIsBigBlind(false);
         } else {
           socket.emit('potSB', {potSB: playerMoney, gameId});
           setPlayerMoney(playerMoney-playerMoney);
+          setIsSmallBlind(false);
+          setIsBigBlind(false);
         }
           setStopB1(stopB1+1);
           playSound(betSound);
