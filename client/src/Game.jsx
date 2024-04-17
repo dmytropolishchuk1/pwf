@@ -1102,6 +1102,9 @@ socket.on('determineWinner', ({highestHandScore, numPlayersWithHighestScore}) =>
 
 socket.on('winningHandScore', ({highestHandScore, numPlayersWithHighestScore, playerHand, playerI}) => {
 
+
+  setTimeout(() => { //to await for all handscores to be processed. risky. relies on ok internet
+
   console.log("Before updating everyonesHand");
   console.log(`playersInGame: ${playersInGame}`);
   console.log(`playerId: ${playerId}`);
@@ -1123,6 +1126,10 @@ console.log(`everyonesHand before update: ${everyonesHand}`);
   console.log(`myHandQuant: ${myHandQuant}`);
   console.log(`highestHandScore: ${highestHandScore}`);
   console.log(`numPlayersWithHighestScore: ${numPlayersWithHighestScore}`);
+
+
+}, 1000);
+
   if (!playerFolded && myHandQuant === Number(highestHandScore) && Number(numPlayersWithHighestScore) === 1){
     setPlayerMoney(playerMoney + storePot);
     console.log(`pm after applying winnings: ${playerMoney}`);
