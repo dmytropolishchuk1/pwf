@@ -1747,9 +1747,7 @@ socket.on('cashUpdate', async ({ cashUpdate, playerId, gameId }) => {
 
 socket.on('sendHandScore', async ({ handScore, gameId }) => {
   let game = await Game.findOne({ gameId: gameId });
-  
-  
-
+ 
     const highestHandScore = Math.max(...game.scoresOfHands);
     const numPlayersWithHighestScore = game.scoresOfHands.filter(score => score === highestHandScore).length;
     io.to(gameId).emit('determineWinner', { highestHandScore, numPlayersWithHighestScore });

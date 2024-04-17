@@ -187,6 +187,8 @@ function Game() {
   const [showOtherCards, setShowOtherCards] = useState(false);
   const [storePot, setStorePot] = useState(0);
   const [everyonesHand, setEveryonesHand] = useState ([]);
+  const [payoutStopper, setPayoutStopper] = useState(0);
+  const [payoutStopper2, setPayoutStopper2] = useState(0);
 
   const [interBet, setInterBet] = useState(0);
   const [interIndex, setInterIndex] = useState(0);
@@ -1102,9 +1104,6 @@ socket.on('determineWinner', ({highestHandScore, numPlayersWithHighestScore}) =>
 
 socket.on('winningHandScore', ({highestHandScore, numPlayersWithHighestScore, playerHand, playerI}) => {
 
-
-  setTimeout(() => { //to await for all handscores to be processed. risky. relies on ok internet
-
   console.log("Before updating everyonesHand");
   console.log(`playersInGame: ${playersInGame}`);
   console.log(`playerId: ${playerId}`);
@@ -1127,15 +1126,14 @@ console.log(`everyonesHand before update: ${everyonesHand}`);
   console.log(`highestHandScore: ${highestHandScore}`);
   console.log(`numPlayersWithHighestScore: ${numPlayersWithHighestScore}`);
 
-
-}, 1000);
-
-  if (!playerFolded && myHandQuant === Number(highestHandScore) && Number(numPlayersWithHighestScore) === 1){
+  if (!playerFolded && myHandQuant === Number(highestHandScore) && Number(numPlayersWithHighestScore) === 1 && payoutStopper < 1){
     setPlayerMoney(playerMoney + storePot);
     console.log(`pm after applying winnings: ${playerMoney}`);
+    setPayoutStopper(payoutStopper + 1);
   }
-  else if (!playerFolded && myHandQuant === Number(highestHandScore) && Number(numPlayersWithHighestScore) > 1){
+  else if (!playerFolded && myHandQuant === Number(highestHandScore) && Number(numPlayersWithHighestScore) > 1 && payoutStopper2 < 1){
     setPlayerMoney(playerMoney + (storePot/numPlayersWithHighestScore));
+    setPayoutStopper2(payoutStopper2 + 1);
   }
   console.log(highestHandScore);
   console.log(`storepot: ${storePot}`);
@@ -1180,6 +1178,8 @@ socket.on('newHand', () => {
   setTurnCount(0);
   setTurnCount2(0);
   setTurnCount3(0);
+  setPayoutStopper(0);
+  setPayoutStopper2(0);
   socket.emit('gameSequence2', { gameId });
 });
 
