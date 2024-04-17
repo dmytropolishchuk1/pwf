@@ -1747,16 +1747,18 @@ socket.on('cashUpdate', async ({ cashUpdate, playerId, gameId }) => {
 
 socket.on('sendHandScore', async ({ handScore, gameId }) => {
   let game = await Game.findOne({ gameId: gameId });
-  game.scoresOfHands.push(handScore);
-  await game.save();
   
-  if (game.scoresOfHands.length === (game.playersIds.length - game.folderPlayers.length)){
+  
+  if (game.scoresOfHands.length === (game.playersIds.length - game.folderPlayers.length - 1)){
     const highestHandScore = Math.max(...game.scoresOfHands);
     const numPlayersWithHighestScore = game.scoresOfHands.filter(score => score === highestHandScore).length;
     io.to(gameId).emit('determineWinner', { highestHandScore, numPlayersWithHighestScore });
     console.log(`${handScore} : handScore highest handScore ${highestHandScore}`);
   }
 
+game.scoresOfHands.push(handScore);
+  await game.save();
+  
   console.log(`game scores of hands: ${game.scoresOfHands} and its length: ${game.scoresOfHands.length} ${handScore} : handScore gpidlenght ${game.playersIds.length} `);
 });
 
