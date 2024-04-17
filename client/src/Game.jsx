@@ -348,8 +348,8 @@ function Game() {
       setIsSmallBlind(false);
       setIsBigBlind(false);
       setClientBetAmount(Number(titkiBig));
-      setTitkiStopper(titkiStopper+1);
     }
+    setTitkiStopper(titkiStopper+1);
     });
     socket.on('sB', () => {
       setIsSmallBlind(true);
@@ -1325,7 +1325,7 @@ socket.on('payTheNonFolder', () => {
         socket.off('determineWinner');
         socket.off('minusDuplicate');
       };
-    }, [gameId, socket, turnCount, playerId, pot, cards, runIndex, dealer, myHandQuant, storePot, everyonesHand, isSmallBlind, isBigBlind]);
+    }, [gameId, socket, turnCount, playerId, pot, cards, runIndex, dealer, myHandQuant, storePot, everyonesHand, isSmallBlind, isBigBlind, titkiStopper]);
   
 
     const handlePlayerAction = (actionType, betAmount, event, clientBetAmount) => {
