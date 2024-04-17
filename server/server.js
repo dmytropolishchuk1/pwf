@@ -1313,7 +1313,7 @@ console.log(`you know ${game.playersIds[(game.currentPlayerIndex+1)%game.players
         io.to(gameId).emit('goFlop');
         await advanceTurnNewStage(gameId);
         if (game.updatedPlayersLength === game.playersIds.length || !game.folderPlayers.includes(game.playersIds[game.dealerIndex+1])){
-        game.currentPlayerIndex = (game.dealerIndex+1);
+        game.currentPlayerIndex = (game.dealerIndex+1) % game.playersIds.length;
         }
         await game.save();
         
@@ -1372,8 +1372,8 @@ console.log(`you know ${game.playersIds[(game.currentPlayerIndex+1)%game.players
                       mutexTurns.release();
                     }
                   }
-        betAmount = 0;
-        io.to(gameId).emit('potUpdated', { betAmount });
+        betAmount = 0; 
+        io.to(gameId).emit('potUpdated', { betAmount }); 
         game.betDifference = 0;
         game.raiseCount = 0;
         game.interBet = 0;
@@ -1404,10 +1404,9 @@ console.log(`you know ${game.playersIds[(game.currentPlayerIndex+1)%game.players
         io.to(gameId).emit('goTurn');
         await advanceTurnNewStage(gameId);
         if (game.updatedPlayersLength === game.playersIds.length || !game.folderPlayers.includes(game.playersIds[game.dealerIndex+1])){
-          game.currentPlayerIndex = (game.dealerIndex+1);
+          game.currentPlayerIndex = (game.dealerIndex+1) % game.playersIds.length;
           }
         await game.save();
-
 
        if (game.folderPlayers.includes(game.playersIds[game.dealerIndex]) && game.currentPlayerIndex === game.dealerIndex){
           mutexTurns.acquire(); 
@@ -1496,7 +1495,7 @@ console.log(`you know ${game.playersIds[(game.currentPlayerIndex+1)%game.players
         io.to(gameId).emit('goRiver');
         await advanceTurnNewStage(gameId);
         if (game.updatedPlayersLength === game.playersIds.length || !game.folderPlayers.includes(game.playersIds[game.dealerIndex+1])){
-          game.currentPlayerIndex = (game.dealerIndex+1);
+          game.currentPlayerIndex = (game.dealerIndex+1) % game.playersIds.length;
           }
         await game.save();
 
