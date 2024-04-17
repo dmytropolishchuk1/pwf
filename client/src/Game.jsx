@@ -414,13 +414,9 @@ function Game() {
           setPlayerMoney(playerMoney - 25);
           setSB(25);
           socket.emit('potSB', {potSB: 25, gameId});
-          setIsSmallBlind(false);
-          setIsBigBlind(false);
         } else {
           socket.emit('potSB', {potSB: playerMoney, gameId});
           setPlayerMoney(playerMoney-playerMoney);
-          setIsSmallBlind(false);
-          setIsBigBlind(false);
         }
           setStopB1(stopB1+1);
           playSound(betSound);
