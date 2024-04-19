@@ -42,6 +42,7 @@ const Landing = () => {
 
 
   return (
+    <div className='landing-bg'>
     <div className="landing">
       <a className="start-anchor" href='#' onClick={startGame}>Start Game</a>
       <input
@@ -51,6 +52,7 @@ const Landing = () => {
         onChange={(e) => setJoinGameId(e.target.value)}
       />
       <a className="join-anchor" href='#' onClick={joinGame}>Join Game</a>
+    </div>
     </div>
   );
 };

@@ -1,11 +1,15 @@
-.landing{
-background-image:url("https://giphy.com/gifs/season-6-the-simpsons-6x24-3o6Mbic1u4ed0crSNy");
+.landing-bg{
+background-image:url('https://giphy.com/gifs/season-6-the-simpsons-6x24-3o6Mbic1u4ed0crSNy');
 background-size: cover;
 background-position: center;
-background-repeat: no-repeat;
+background-repeat: no-repeat;  
+display: flex;
+justify-content: center;
+align-items: center;
+height: 100vh; 
+}
 
-
-
+.landing{
 font-size: 2em;
 position: fixed;
 display: flex;
