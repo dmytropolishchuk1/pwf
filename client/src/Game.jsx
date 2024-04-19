@@ -1006,14 +1006,14 @@ socket.on('selectWinner', () => {
 
 
 
-    let straight = false;
-    const sortedNamesForStraight = namesForStraight.slice().sort();
-    for (let i = 0; i <= cardNames.length - 5; i++) {
-    const subList = cardNames.slice(i, i + 5).sort(); // Sort the subList
+   let straight = false;
+const sortedNamesForStraight = namesForStraight.slice().sort();
+for (let i = 0; i <= cardNames.length - 5; i++) {
+    const subList = Array.from(new Set(cardNames.slice(i, i + 5))).sort(); // Convert subList to a Set to remove duplicates, then sort
     const isStraight = subList.every((name, index) => name === sortedNamesForStraight[index]);
     if (isStraight) {
-    straight = true;
-    break;
+        straight = true;
+        break;
     }
 }
 const isFullHousePossible = (fullHouseCardNamePairs.length === 1 && setCardNames.length > 0 && fullHousetableCardNamePairs.length === 0) || (fullHouseCardNamePairs.length === 2 && setCardNames.length > 0 && fullHousetableCardNamePairs.length === 1);
