@@ -935,7 +935,7 @@ socket.on('selectWinner', () => {
 
   for (let i = 0; i < namesForStraight.length; i++){
     if (playerHandCardNames.includes(namesForStraight[i])){
-      twoCardScore = i;
+      twoCardScore = i; //determine highest card's score
     }
   }
 
@@ -1008,19 +1008,14 @@ socket.on('selectWinner', () => {
 
     let straight = false;
     const sortedNamesForStraight = namesForStraight.slice().sort();
-    
     for (let i = 0; i <= cardNames.length - 5; i++) {
-      const subList = cardNames.slice(i, i + 5);
-    
-      const sortedSubList = subList.slice().sort();
-    
-      const isStraight = sortedSubList.every((name, index) => name === sortedNamesForStraight[index]);
-    
-      if (isStraight) {
-        straight = true;
-        break;
-      }
+    const subList = cardNames.slice(i, i + 5).sort(); // Sort the subList
+    const isStraight = subList.every((name, index) => name === sortedNamesForStraight[index]);
+    if (isStraight) {
+    straight = true;
+    break;
     }
+}
 const isFullHousePossible = (fullHouseCardNamePairs.length === 1 && setCardNames.length > 0 && fullHousetableCardNamePairs.length === 0) || (fullHouseCardNamePairs.length === 2 && setCardNames.length > 0 && fullHousetableCardNamePairs.length === 1);
 
 if (pairCardNames.length === 1 ){
